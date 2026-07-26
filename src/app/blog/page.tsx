@@ -5,9 +5,8 @@ import { listarPostsBlogPublicos } from '@/lib/blog/acoes'
 import { ROTAS } from '@/lib/rotas'
 
 export const metadata: Metadata = {
-  title: 'Blog VIGMED · Artigos sobre gestão documental e compliance',
-  description:
-    'Artigos, novidades e conteúdos da VIGMED sobre gestão segura de documentos corporativos, compliance e boas práticas.',
+  title: 'Blog VIGMED',
+  description: 'Blogs sobre assuntos variados. Em desenvolvimento.',
   robots: { index: true, follow: true },
   openGraph: {
     type: 'website',
@@ -37,10 +36,10 @@ export default async function PaginaBlogLista() {
       <main className="mx-auto max-w-4xl px-4 py-10">
         <div className="mb-10">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[var(--color-text-1)]">
-            Insights em gestão documental
+            Blogs sobre assuntos variados
           </h1>
           <p className="mt-3 text-lg text-[var(--color-text-2)] max-w-2xl">
-            Conteúdos da equipe VIGMED sobre segurança da informação, compliance e produtividade corporativa.
+            Em desenvolvimento.
           </p>
         </div>
 
@@ -86,7 +85,7 @@ export default async function PaginaBlogLista() {
           ))}
           {!posts.length && (
             <div className="surface-card p-12 text-center text-muted-foreground">
-              Em breve novos artigos.
+              Em desenvolvimento.
             </div>
           )}
         </div>
