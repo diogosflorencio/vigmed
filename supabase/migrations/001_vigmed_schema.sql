@@ -1,7 +1,3 @@
--- ============================================================
--- VIGMED - Schema completo (português)
--- Execute no SQL Editor do Supabase
--- ============================================================
 
 create extension if not exists "pgcrypto";
 create extension if not exists "uuid-ossp";
@@ -521,6 +517,6 @@ insert into public.configuracoes (chave, valor) values
   ('email_comunicado_automatico', 'false')
 on conflict (chave) do nothing;
 
--- -- Realtime (opcional) -----
+-- -- Realtime -----
 -- alter publication supabase_realtime add table public.mensagens;
 -- alter publication supabase_realtime add table public.comunicados;

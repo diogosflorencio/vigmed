@@ -1,6 +1,3 @@
--- ============================================================
--- VIGMED - Blog público (blog.vigmed.com.br)
--- ============================================================
 
 do $$ begin
   create type public.status_post_blog as enum ('rascunho', 'publicado', 'arquivado');

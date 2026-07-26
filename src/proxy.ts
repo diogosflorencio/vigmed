@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { atualizarSessao } from '@/lib/supabase/middleware'
-import { obterAmbienteDoHost, obterUrlBaseDoAmbiente } from '@/lib/ambiente'
+import { obterAmbienteDoHost, obterUrlBaseDoAmbiente } from '@/lib/ambiente-edge'
 import { ROTAS } from '@/lib/rotas'
 
 const ROTAS_AUTH_UNIFICADAS: string[] = [
@@ -18,7 +18,16 @@ const ROTAS_AUTH_LEGADAS: string[] = [
   '/docs/recuperar',
 ]
 
-export async function middleware(requisicao: NextRequest) {
+export async function proxy(requisicao: NextRequest) {
+  try {
+    return await executarProxy(requisicao)
+  } catch (erro) {
+    console.error('[proxy] Erro não tratado:', erro)
+    return NextResponse.next({ request: requisicao })
+  }
+}
+
+async function executarProxy(requisicao: NextRequest) {
   const { pathname } = requisicao.nextUrl
   const host = requisicao.headers.get('host') ?? 'localhost'
   const ambiente = obterAmbienteDoHost(host)

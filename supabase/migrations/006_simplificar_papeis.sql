@@ -1,7 +1,3 @@
--- ============================================================
--- VIGMED - Simplifica papéis: super_administrador → administrador
--- Mantém o enum legado (evita quebrar policies RLS existentes).
--- ============================================================
 
 update public.perfis
 set papel = 'administrador'
