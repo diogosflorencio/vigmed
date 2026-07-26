@@ -1,6 +1,3 @@
--- ============================================================
--- VIGMED - Upload por empresa + origem + armazenamento
--- ============================================================
 
 do $$ begin
   create type public.origem_publicacao_documento as enum ('admin', 'empresa');

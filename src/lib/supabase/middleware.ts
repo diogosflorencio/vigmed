@@ -3,15 +3,20 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 /**
  * Atualiza a sessão Supabase a cada requisição.
- * Chamado pelo middleware principal antes de qualquer roteamento.
+ * Chamado pelo proxy principal antes de qualquer roteamento.
  */
 export async function atualizarSessao(requisicao: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next({ request: requisicao })
+  }
+
   let resposta = NextResponse.next({ request: requisicao })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return requisicao.cookies.getAll()
@@ -26,11 +31,12 @@ export async function atualizarSessao(requisicao: NextRequest) {
           )
         },
       },
-    },
-  )
+    })
 
-  // Renova o token JWT se estiver próximo de expirar
-  await supabase.auth.getUser()
+    await supabase.auth.getUser()
+  } catch (erro) {
+    console.error('[proxy] Falha ao atualizar sessão Supabase:', erro)
+  }
 
   return resposta
 }

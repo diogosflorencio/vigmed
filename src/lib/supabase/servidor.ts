@@ -22,7 +22,7 @@ export async function criarClienteSupabaseServidor() {
               armazenamentoCookies.set(name, value, options),
             )
           } catch {
-            // Em Server Components puros os cookies são gerenciados pelo middleware
+            // Em Server Components puros os cookies são gerenciados pelo proxy
           }
         },
       },
