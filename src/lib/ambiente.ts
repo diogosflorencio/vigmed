@@ -1,0 +1,100 @@
+import { z } from 'zod'
+
+/** Validação das variáveis de ambiente - falha cedo se algo estiver ausente */
+const esquemaAmbiente = z.object({
+  NEXT_PUBLIC_APP_NAME: z.string().default('VIGMED'),
+  NEXT_PUBLIC_ROOT_DOMAIN: z.string().default('vigmed.com.br'),
+  VIGMED_DEV_TENANT: z.enum(['site', 'adm', 'docs', 'blog']).default('site'),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SUPABASE_PROJECT_ID: z.string().min(1).optional(),
+  R2_ACCOUNT_ID: z.string().min(1).optional(),
+  R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+  R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  R2_ENDPOINT: z.string().url().optional(),
+  R2_BUCKET_NAME: z.string().default('vigmed-docs'),
+  R2_PUBLIC_URL: z.string().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_ADMIN_URL: z.string().url().optional(),
+  NEXT_PUBLIC_DOCS_URL: z.string().url().optional(),
+  NEXT_PUBLIC_BLOG_URL: z.string().url().optional(),
+})
+
+export type Ambiente = z.infer<typeof esquemaAmbiente>
+
+/** Ambientes da plataforma - cada um corresponde a um subdomínio */
+export type AmbienteApp = 'site' | 'adm' | 'docs' | 'blog'
+
+export function obterAmbiente(): Ambiente {
+  return esquemaAmbiente.parse({
+    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
+    NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
+    VIGMED_DEV_TENANT: process.env.VIGMED_DEV_TENANT,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_PROJECT_ID: process.env.SUPABASE_PROJECT_ID,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_ENDPOINT: process.env.R2_ENDPOINT,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
+    R2_PUBLIC_URL: process.env.R2_PUBLIC_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL,
+    NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
+    NEXT_PUBLIC_BLOG_URL: process.env.NEXT_PUBLIC_BLOG_URL,
+  })
+}
+
+/**
+ * Identifica qual ambiente (site / adm / docs) deve ser servido
+ * com base no hostname da requisição.
+ * Em desenvolvimento local, usa VIGMED_DEV_TENANT.
+ */
+export function obterAmbienteDoHost(hostname: string): AmbienteApp {
+  const dominioRaiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'vigmed.com.br'
+  const host = hostname.split(':')[0]
+
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return (process.env.VIGMED_DEV_TENANT as AmbienteApp) ?? 'site'
+  }
+
+  if (host === dominioRaiz || host === `www.${dominioRaiz}`) return 'site'
+  if (host === `adm.${dominioRaiz}`) return 'adm'
+  if (host === `docs.${dominioRaiz}`) return 'docs'
+  if (host === `blog.${dominioRaiz}`) return 'blog'
+
+  const partes = host.split('.')
+  if (partes.length >= 3) {
+    const subdominio = partes[0]
+    if (subdominio === 'adm') return 'adm'
+    if (subdominio === 'docs') return 'docs'
+    if (subdominio === 'blog') return 'blog'
+  }
+
+  return 'site'
+}
+
+/** URL base pública de cada ambiente - usada em redirects de auth */
+export function obterUrlBaseDoAmbiente(ambiente: AmbienteApp): string {
+  const dominioRaiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'vigmed.com.br'
+  const emDesenvolvimento = process.env.NODE_ENV === 'development'
+
+  if (emDesenvolvimento) {
+    const porta = process.env.PORT ?? '3000'
+    return `http://localhost:${porta}`
+  }
+
+  switch (ambiente) {
+    case 'adm':
+      return process.env.NEXT_PUBLIC_ADMIN_URL ?? `https://adm.${dominioRaiz}`
+    case 'docs':
+      return process.env.NEXT_PUBLIC_DOCS_URL ?? `https://docs.${dominioRaiz}`
+    case 'blog':
+      return process.env.NEXT_PUBLIC_BLOG_URL ?? `https://blog.${dominioRaiz}`
+    default:
+      return process.env.NEXT_PUBLIC_SITE_URL ?? `https://${dominioRaiz}`
+  }
+}

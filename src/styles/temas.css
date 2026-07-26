@@ -1,0 +1,43 @@
+/* Transições suaves ao trocar tema */
+html[data-tema-animar] {
+  transition:
+    background-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-tema-animar] body,
+html[data-tema-animar] .menu-dock-inner,
+html[data-tema-animar] .surface-card,
+html[data-tema-animar] .glass,
+html[data-tema-animar] .glass-surface,
+html[data-tema-animar] [data-slot='card'],
+html[data-tema-animar] .menu-dock-item-icone,
+html[data-tema-animar] [data-slot='button']:not(:active) {
+  transition:
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fallback antes do JS — Banana claro (padrão) */
+:root,
+[data-tema='banana'][data-theme='light'],
+[data-theme='light']:not([data-tema]) {
+  --color-surface: #f8f8f7;
+  --color-surface-2: #f0f0ee;
+  --color-accent: #2e3038;
+  --color-accent-fg: #faf8ff;
+  --primary: #2e3038;
+  --primary-foreground: #faf8ff;
+}
+
+[data-tema='banana'][data-theme='dark'],
+[data-theme='dark']:not([data-tema]) {
+  --color-surface: #2e3038;
+  --color-surface-2: #1c1c1a;
+  --color-accent: #e2e2ec;
+  --color-accent-fg: #191b22;
+  --primary: #e2e2ec;
+  --primary-foreground: #191b22;
+}
