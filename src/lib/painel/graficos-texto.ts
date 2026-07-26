@@ -1,15 +1,21 @@
 const BLOCOS_NIVEL = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'] as const
+const LARGURA_ROTULO_PADRAO = 18
 
 export interface ItemGrafico {
   nome: string
   valor: number
 }
 
-/** Barra horizontal █░ com rótulo e valor */
-export function barraHorizontal(item: ItemGrafico, maximo: number, largura = 28): string {
+function truncarRotulo(texto: string, largura = LARGURA_ROTULO_PADRAO): string {
+  if (texto.length <= largura) return texto.padEnd(largura, ' ')
+  return `${texto.slice(0, largura - 1)}…`
+}
+
+/** Barra horizontal com rótulo, preenchimento e valor */
+export function barraHorizontal(item: ItemGrafico, maximo: number, largura = 24): string {
   const preenchido = maximo > 0 ? Math.round((item.valor / maximo) * largura) : 0
   const barra = '█'.repeat(Math.min(preenchido, largura)) + '░'.repeat(Math.max(0, largura - preenchido))
-  const rotulo = item.nome.padEnd(16, ' ').slice(0, 16)
+  const rotulo = truncarRotulo(item.nome)
   const num = String(item.valor).padStart(6, ' ')
   return `${rotulo} ${barra} ${num}`
 }

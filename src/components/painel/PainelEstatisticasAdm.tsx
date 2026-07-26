@@ -51,9 +51,9 @@ export function PainelEstatisticasAdm({ dados }: Props) {
   ]
 
   const usuariosItens = [
-    { nome: 'Administrador do sistema', valor: u.administradores },
+    { nome: 'Admin sistema', valor: u.administradores },
     { nome: 'Admin empresa', valor: u.administradoresEmpresa },
-    { nome: 'Usuário empresa', valor: u.usuariosEmpresa },
+    { nome: 'Usu. empresa', valor: u.usuariosEmpresa },
   ]
 
   const documentosItens = [
@@ -125,7 +125,7 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{u.ativos}</N> ativos · <N>{u.inativos}</N> inativos · <N>{u.loginsRecentes}</N> com login nos
               últimos 7 dias
             </Texto>
-            <Ascii conteudo={blocoBarras(usuariosItens.filter((x) => x.valor > 0))} />
+            <Ascii conteudo={blocoBarras(usuariosItens)} />
           </Secao>
 
           <Secao titulo="Documentos">
