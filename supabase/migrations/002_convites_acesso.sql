@@ -1,6 +1,3 @@
--- ============================================================
--- VIGMED - Convites de acesso (cadastro só com e-mail autorizado)
--- ============================================================
 
 do $$ begin
   create type public.ambiente_convite as enum ('adm', 'docs');

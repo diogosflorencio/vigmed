@@ -1,7 +1,3 @@
--- ============================================================
--- VIGMED - Garante tabelas do blog e recarrega cache da API
--- Corrige PGRST205 quando posts_blog existe no PG mas não na API
--- ============================================================
 
 do $$ begin
   create type public.status_post_blog as enum ('rascunho', 'publicado', 'arquivado');
