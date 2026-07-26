@@ -5,7 +5,7 @@ import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
 import { registrarAuditoria } from '@/lib/auth/sessao'
 import { normalizarEmail, validarConviteParaCadastro } from '@/lib/auth/convites'
 import { validarPerfilAposAutenticacao } from '@/lib/auth/perfil-servidor'
-import { urlBaseAuth, urlPainelPorPapel } from '@/lib/auth/redirecionamento'
+import { urlBaseAuthDaRequisicao, urlPainelNaOrigem } from '@/lib/auth/redirecionamento'
 import { ROTAS } from '@/lib/rotas'
 
 /** Login com e-mail e senha; redireciona ao painel conforme o papel */
@@ -43,7 +43,8 @@ export async function entrarComEmail(email: string, senha: string) {
     detalhes: { metodo: 'email' },
   })
 
-  redirect(urlPainelPorPapel(validacao.perfil.papel))
+  const urlBase = await urlBaseAuthDaRequisicao()
+  redirect(urlPainelNaOrigem(validacao.perfil.papel, urlBase))
 }
 
 /** Cadastro com convite pré-autorizado */
@@ -92,7 +93,7 @@ export async function cadastrarComEmail(
 
 export async function entrarComGoogle() {
   const supabase = await criarClienteSupabaseServidor()
-  const urlBase = urlBaseAuth()
+  const urlBase = await urlBaseAuthDaRequisicao()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -129,7 +130,7 @@ export async function sair() {
 
 export async function solicitarRedefinicaoSenha(email: string) {
   const supabase = await criarClienteSupabaseServidor()
-  const urlBase = urlBaseAuth()
+  const urlBase = await urlBaseAuthDaRequisicao()
   const emailNormalizado = normalizarEmail(email)
 
   const { error } = await supabase.auth.resetPasswordForEmail(emailNormalizado, {

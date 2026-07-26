@@ -1,5 +1,12 @@
 export type AmbienteApp = 'site' | 'adm' | 'docs' | 'blog'
 
+/** Garante URL absoluta (evita redirect relativo no OAuth do Supabase). */
+function normalizarUrlBase(url: string): string {
+  const limpa = url.trim().replace(/\/+$/, '')
+  if (/^https?:\/\//i.test(limpa)) return limpa
+  return `https://${limpa}`
+}
+
 /**
  * Funções usadas no proxy (Edge). Sem Zod — evita falha de bundle no runtime.
  */
@@ -38,12 +45,12 @@ export function obterUrlBaseDoAmbiente(ambiente: AmbienteApp): string {
 
   switch (ambiente) {
     case 'adm':
-      return process.env.NEXT_PUBLIC_ADMIN_URL ?? `https://adm.${dominioRaiz}`
+      return normalizarUrlBase(process.env.NEXT_PUBLIC_ADMIN_URL ?? `adm.${dominioRaiz}`)
     case 'docs':
-      return process.env.NEXT_PUBLIC_DOCS_URL ?? `https://docs.${dominioRaiz}`
+      return normalizarUrlBase(process.env.NEXT_PUBLIC_DOCS_URL ?? `docs.${dominioRaiz}`)
     case 'blog':
-      return process.env.NEXT_PUBLIC_BLOG_URL ?? `https://blog.${dominioRaiz}`
+      return normalizarUrlBase(process.env.NEXT_PUBLIC_BLOG_URL ?? `blog.${dominioRaiz}`)
     default:
-      return process.env.NEXT_PUBLIC_SITE_URL ?? `https://${dominioRaiz}`
+      return normalizarUrlBase(process.env.NEXT_PUBLIC_SITE_URL ?? dominioRaiz)
   }
 }
