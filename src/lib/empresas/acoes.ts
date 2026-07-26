@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { exigirAutenticacao, registrarAuditoria } from '@/lib/auth/sessao'
+import { criarClienteSupabaseAdmin } from '@/lib/supabase/admin'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
 import { ROTAS } from '@/lib/rotas'
 import type { Empresa, StatusEmpresa } from '@/types'
@@ -70,7 +71,51 @@ export async function salvarEmpresa(dados: {
       recursoId: data.id,
       detalhes: { nome: payload.nome_fantasia },
     })
+    revalidatePath(ROTAS.adm.empresas)
+    return { sucesso: true, id: data.id }
   }
+
+  revalidatePath(ROTAS.adm.empresas)
+  revalidatePath(ROTAS.adm.empresa(dados.id!))
+  revalidatePath(ROTAS.adm.empresaDocumentos(dados.id!))
+  return { sucesso: true, id: dados.id }
+}
+
+export async function obterEmpresa(id: string) {
+  await exigirAutenticacao(['administrador'])
+  const supabase = await criarClienteSupabaseServidor()
+  const { data, error } = await supabase.from('empresas').select('*').eq('id', id).maybeSingle()
+  if (error || !data) return { erro: 'Empresa não encontrada.', empresa: null }
+  return { empresa: data as Empresa }
+}
+
+export async function excluirEmpresa(id: string) {
+  const perfil = await exigirAutenticacao(['administrador'])
+  const admin = criarClienteSupabaseAdmin()
+
+  const { data: empresa } = await admin.from('empresas').select('id, nome_fantasia').eq('id', id).maybeSingle()
+  if (!empresa) return { erro: 'Empresa não encontrada.' }
+
+  const { count } = await admin
+    .from('perfis')
+    .select('*', { count: 'exact', head: true })
+    .eq('empresa_id', id)
+    .eq('ativo', true)
+
+  if ((count ?? 0) > 0) {
+    return { erro: 'Desative ou remova os usuários ativos antes de excluir a empresa.' }
+  }
+
+  const { error } = await admin.from('empresas').delete().eq('id', id)
+  if (error) return { erro: 'Não foi possível excluir a empresa.' }
+
+  await registrarAuditoria({
+    acao: 'exclusao',
+    usuarioId: perfil.id,
+    recurso: 'empresa',
+    recursoId: id,
+    detalhes: { nome: empresa.nome_fantasia },
+  })
 
   revalidatePath(ROTAS.adm.empresas)
   return { sucesso: true }

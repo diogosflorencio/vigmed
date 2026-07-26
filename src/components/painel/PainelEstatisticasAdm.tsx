@@ -1,13 +1,7 @@
 import type { ReactNode } from 'react'
 import type { EstatisticasPainelAdmin } from '@/types'
 import { formatarBytes } from '@/lib/utils'
-import {
-  barraHorizontal,
-  barraProgresso,
-  blocoBarras,
-  blocoSparkline,
-  colunasAscii,
-} from '@/lib/painel/graficos-texto'
+import { barraProgresso, blocoBarras } from '@/lib/painel/graficos-texto'
 
 interface Props {
   dados: EstatisticasPainelAdmin
@@ -31,6 +25,7 @@ function Texto({ children }: { children: ReactNode }) {
 }
 
 function Ascii({ conteudo }: { conteudo: string }) {
+  if (!conteudo) return null
   return <pre className="painel-estat-ascii" aria-hidden>{conteudo}</pre>
 }
 
@@ -51,14 +46,17 @@ export function PainelEstatisticasAdm({ dados }: Props) {
   ]
 
   const usuariosItens = [
-    { nome: 'Administrador do sistema', valor: u.administradores },
+    { nome: 'Admin sistema', valor: u.administradores },
     { nome: 'Admin empresa', valor: u.administradoresEmpresa },
-    { nome: 'Usuário empresa', valor: u.usuariosEmpresa },
+    { nome: 'Usu. empresa', valor: u.usuariosEmpresa },
   ]
+  const totalUsuariosPorPapel = u.administradores + u.administradoresEmpresa + u.usuariosEmpresa
 
   const documentosItens = [
-    { nome: '7 dias', valor: d.criados7d },
-    { nome: '30 dias', valor: d.criados30d },
+    { nome: 'Criados 7d', valor: d.criados7d },
+    { nome: 'Criados 30d', valor: d.criados30d },
+    { nome: 'Uploads 7d', valor: d.uploads7d },
+    { nome: 'Downloads 7d', valor: d.downloads7d },
   ]
 
   const auditoriaItens = [
@@ -73,12 +71,18 @@ export function PainelEstatisticasAdm({ dados }: Props) {
     { nome: 'Rascunhos', valor: b.rascunhos },
     { nome: 'Arquivados', valor: b.arquivados },
   ]
+  const totalPostsBlog = b.publicados + b.rascunhos + b.arquivados
 
   const engajamentoItens = [
     { nome: 'Comunicados', valor: c.ativos },
     { nome: 'Leituras', valor: c.leituras },
-    { nome: 'Mensagens', valor: m.mensagens7d },
-    { nome: 'Views blog', valor: b.visualizacoes7d },
+    { nome: 'Mensagens 7d', valor: m.mensagens7d },
+    { nome: 'Views blog 7d', valor: b.visualizacoes7d },
+  ]
+
+  const convitesItens = [
+    { nome: 'Pendentes', valor: v.pendentes },
+    { nome: 'Aceitos 30d', valor: v.aceitos30d },
   ]
 
   return (
@@ -101,9 +105,9 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{e.ativas}</N> ativas · <N>{e.inativas}</N> inativas · <N>{e.suspensas}</N> suspensas ·{' '}
               <N>{e.total}</N> cadastradas
             </Texto>
-            <Ascii conteudo={blocoBarras(empresasItens)} />
+            <Ascii conteudo={blocoBarras(empresasItens, { total: e.total, modo: 'parte' })} />
             <Texto>
-              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N> — sem limite · Cota empresas{' '}
+              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N>, sem limite · Cota empresas{' '}
               <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
               <N>{formatarBytes(e.armazenamentoLimite)}</N>, média{' '}
               <N>{formatarBytes(e.mediaArmazenamento)}</N> por empresa
@@ -125,7 +129,12 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{u.ativos}</N> ativos · <N>{u.inativos}</N> inativos · <N>{u.loginsRecentes}</N> com login nos
               últimos 7 dias
             </Texto>
-            <Ascii conteudo={blocoBarras(usuariosItens.filter((x) => x.valor > 0))} />
+            <Ascii
+              conteudo={blocoBarras(usuariosItens, {
+                total: totalUsuariosPorPapel,
+                modo: 'parte',
+              })}
+            />
           </Secao>
 
           <Secao titulo="Documentos">
@@ -133,10 +142,7 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{d.ativos}</N> ativos de <N>{d.total}</N> no total · <N>{d.categorias}</N> categorias · volume{' '}
               <N>{formatarBytes(d.somaTamanho)}</N> · <N>{d.somaDownloads}</N> downloads acumulados
             </Texto>
-            <Ascii conteudo={colunasAscii(documentosItens)} />
-            <Texto>
-              <N>{d.uploads7d}</N> uploads e <N>{d.downloads7d}</N> downloads na auditoria (7 dias)
-            </Texto>
+            <Ascii conteudo={blocoBarras(documentosItens, { modo: 'comparativo' })} />
           </Secao>
 
           <Secao titulo="Blog (ainda não há)">
@@ -144,7 +150,12 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{b.publicados}</N> publicados · <N>{b.rascunhos}</N> rascunhos · <N>{b.arquivados}</N> arquivados ·{' '}
               <N>{b.visualizacoes7d}</N> visualizações nos últimos 7 dias
             </Texto>
-            <Ascii conteudo={blocoBarras(blogItens.filter((x) => x.valor > 0))} />
+            <Ascii
+              conteudo={blocoBarras(blogItens, {
+                total: totalPostsBlog,
+                modo: 'parte',
+              })}
+            />
           </Secao>
         </div>
 
@@ -158,30 +169,21 @@ export function PainelEstatisticasAdm({ dados }: Props) {
               <N>{m.conversasAtivas}</N> conversas ativas · <N>{m.totalMensagens}</N> mensagens no total ·{' '}
               <N>{m.mensagens7d}</N> mensagens nos últimos 7 dias
             </Texto>
-            <Ascii conteudo={blocoSparkline(engajamentoItens)} />
+            <Ascii conteudo={blocoBarras(engajamentoItens, { modo: 'comparativo' })} />
           </Secao>
 
           <Secao titulo="Convites">
             <Texto>
               <N>{v.pendentes}</N> convites pendentes · <N>{v.aceitos30d}</N> aceitos nos últimos 30 dias
             </Texto>
-            <Ascii
-              conteudo={[
-                barraHorizontal({ nome: 'Pendentes', valor: v.pendentes }, Math.max(v.pendentes, v.aceitos30d, 1)),
-                barraHorizontal(
-                  { nome: 'Aceitos 30d', valor: v.aceitos30d },
-                  Math.max(v.pendentes, v.aceitos30d, 1),
-                ),
-              ].join('\n')}
-            />
+            <Ascii conteudo={blocoBarras(convitesItens, { modo: 'comparativo' })} />
           </Secao>
 
-          <Secao titulo="Auditoria">
+          <Secao titulo="Auditoria (7 dias)">
             <Texto>
               <N>{a.eventos24h}</N> eventos nas últimas 24 h · <N>{a.eventos7d}</N> em 7 dias
             </Texto>
-            <Ascii conteudo={blocoBarras(auditoriaItens)} />
-            <Ascii conteudo={blocoSparkline(auditoriaItens)} />
+            <Ascii conteudo={blocoBarras(auditoriaItens, { modo: 'comparativo' })} />
           </Secao>
         </div>
       </div>

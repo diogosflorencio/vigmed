@@ -3,8 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ROTAS } from '@/lib/rotas'
-import { Building2, FolderOpen, Pencil, Plus, Search } from 'lucide-react'
+import { Building2, FolderOpen, Plus, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
@@ -20,6 +19,7 @@ import {
   Input,
 } from '@/components/ui'
 import { salvarEmpresa } from '@/lib/empresas/acoes'
+import { ROTAS } from '@/lib/rotas'
 import type { ConsumoArmazenamentoEmpresa, TotaisArmazenamentoPlataforma } from '@/lib/documentos/armazenamento'
 import { cn, formatarBytes, formatarCnpj } from '@/lib/utils'
 import type { Empresa, StatusEmpresa } from '@/types'
@@ -48,7 +48,6 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
   const [busca, definirBusca] = useState('')
   const [statusFiltro, definirStatusFiltro] = useState<StatusEmpresa | 'todos'>('todos')
   const [dialogAberto, definirDialogAberto] = useState(false)
-  const [editando, definirEditando] = useState<Empresa | null>(null)
   const [pendente, iniciarTransicao] = useTransition()
 
   const [form, definirForm] = useState({
@@ -75,32 +74,18 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
   }, [empresasIniciais, busca, statusFiltro])
 
   function abrirNova() {
-    definirEditando(null)
     definirForm({ razaoSocial: '', nomeFantasia: '', cnpj: '', email: '', telefone: '', responsavel: '', status: 'ativo' })
-    definirDialogAberto(true)
-  }
-
-  function abrirEditar(empresa: Empresa) {
-    definirEditando(empresa)
-    definirForm({
-      razaoSocial: empresa.razao_social,
-      nomeFantasia: empresa.nome_fantasia,
-      cnpj: empresa.cnpj,
-      email: empresa.email,
-      telefone: empresa.telefone ?? '',
-      responsavel: empresa.responsavel ?? '',
-      status: empresa.status,
-    })
     definirDialogAberto(true)
   }
 
   function aoSalvar() {
     iniciarTransicao(async () => {
-      const resultado = await salvarEmpresa({ id: editando?.id, ...form })
+      const resultado = await salvarEmpresa({ ...form })
       if (resultado.erro) { toast.error(resultado.erro); return }
-      toast.success(editando ? 'Empresa atualizada.' : 'Empresa criada.')
+      toast.success('Empresa criada.')
       definirDialogAberto(false)
-      router.refresh()
+      if (resultado.id) router.push(ROTAS.adm.empresa(resultado.id))
+      else router.refresh()
     })
   }
 
@@ -217,10 +202,10 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
                       </td>
                       <td>
                         <div className="flex justify-end gap-1">
-                          <button type="button" className="tabela-acao" onClick={() => abrirEditar(empresa)} title="Editar">
-                            <Pencil size={13} />
-                          </button>
-                          <Link href={`${ROTAS.adm.documentos}?empresa=${empresa.id}`} className="tabela-acao" title="Documentos">
+                          <Link href={ROTAS.adm.empresa(empresa.id)} className="tabela-acao" title="Gerenciar empresa">
+                            <Building2 size={13} />
+                          </Link>
+                          <Link href={ROTAS.adm.empresaDocumentos(empresa.id)} className="tabela-acao" title="Documentos">
                             <FolderOpen size={13} />
                           </Link>
                         </div>
@@ -244,7 +229,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
       <Dialog open={dialogAberto} onOpenChange={definirDialogAberto}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editando ? 'Editar empresa' : 'Nova empresa'}</DialogTitle>
+            <DialogTitle>Nova empresa</DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-1">
             <Input label="Razão social" value={form.razaoSocial} onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })} />

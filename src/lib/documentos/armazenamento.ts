@@ -8,9 +8,9 @@ export interface ConsumoArmazenamentoEmpresa {
 }
 
 export interface TotaisArmazenamentoPlataforma {
-  /** Arquivos enviados pelo admin (origem admin) — sem limite */
+  /** Arquivos enviados pelo admin (origem admin), sem limite */
   vigmed: number
-  /** Arquivos enviados pelas empresas — contam na cota */
+  /** Arquivos enviados pelas empresas, contam na cota */
   empresa: number
   /** Soma única de todos os documentos ativos */
   total: number

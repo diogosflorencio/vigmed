@@ -193,6 +193,9 @@ export async function excluirDocumento(documentoId: string) {
 
   revalidatePath(ROTAS.adm.documentos)
   revalidatePath(ROTAS.docs.documentos)
+  for (const empresaId of empresaIds) {
+    revalidatePath(ROTAS.adm.empresaDocumentos(empresaId))
+  }
   return { sucesso: true }
 }
 
@@ -277,4 +280,121 @@ export async function urlVisualizacaoPublica(documentoId: string) {
   })
 
   return { url }
+}
+
+export async function obterDocumentoDetalhe(documentoId: string) {
+  const perfil = await exigirAutenticacao()
+  const admin = criarClienteSupabaseAdmin()
+
+  const { data: documento } = await admin
+    .from('documentos')
+    .select('*, categorias(nome), documento_empresas(empresa_id, empresas(nome_fantasia))')
+    .eq('id', documentoId)
+    .eq('ativo', true)
+    .maybeSingle()
+
+  if (!documento) return { erro: 'Documento não encontrado.' }
+
+  let enviadoPor: { nome_completo: string; email: string } | null = null
+  if (documento.enviado_por) {
+    const { data: perfilEnvio } = await admin
+      .from('perfis')
+      .select('nome_completo, email')
+      .eq('id', documento.enviado_por)
+      .maybeSingle()
+    enviadoPor = perfilEnvio
+  }
+
+  const empresaIds = (documento.documento_empresas as { empresa_id: string }[]).map((de) => de.empresa_id)
+
+  if (!ehAdministrador(perfil.papel)) {
+    if (!perfil.empresa_id || !empresaIds.includes(perfil.empresa_id)) {
+      return { erro: 'Sem permissão.' }
+    }
+  }
+
+  const [{ count: visualizacoes }, { count: downloads }] = await Promise.all([
+    admin
+      .from('documento_acessos')
+      .select('*', { count: 'exact', head: true })
+      .eq('documento_id', documentoId)
+      .eq('acao', 'visualizacao'),
+    admin
+      .from('documento_acessos')
+      .select('*', { count: 'exact', head: true })
+      .eq('documento_id', documentoId)
+      .eq('acao', 'download'),
+  ])
+
+  return {
+    documento: {
+      ...documento,
+      enviado_por_perfil: enviadoPor,
+      total_visualizacoes: visualizacoes ?? 0,
+      total_downloads_registrados: downloads ?? 0,
+      empresa_ids: empresaIds,
+    },
+  }
+}
+
+export async function obterUrlPreviewDocumento(documentoId: string) {
+  const resultado = await obterDocumentoDetalhe(documentoId)
+  if ('erro' in resultado && resultado.erro) return { erro: resultado.erro }
+
+  const doc = resultado.documento!
+  const { gerarUrlDownloadAssinada } = await import('@/lib/r2/cliente')
+  const url = await gerarUrlDownloadAssinada(doc.chave_arquivo, doc.nome_arquivo, { inline: true })
+  return { url, tipoMime: doc.tipo_mime, nomeArquivo: doc.nome_arquivo }
+}
+
+export async function atualizarEmpresasDocumento(documentoId: string, empresaIds: string[]) {
+  const perfil = await exigirAutenticacao(['administrador', 'administrador_empresa', 'usuario_empresa'])
+
+  const documento = await obterDocumentoComEmpresas(documentoId)
+  if (!documento) return { erro: 'Documento não encontrado.' }
+
+  if (!ehAdministrador(perfil.papel)) {
+    if (documento.enviado_por !== perfil.id) {
+      return { erro: 'Sem permissão para alterar empresas deste documento.' }
+    }
+  }
+
+  if (!empresaIds.length) {
+    return { erro: 'Selecione ao menos uma empresa.' }
+  }
+
+  const admin = criarClienteSupabaseAdmin()
+  const atuais = (documento.documento_empresas as { empresa_id: string }[]).map((de) => de.empresa_id)
+  const novas = [...new Set(empresaIds)]
+  const adicionar = novas.filter((id) => !atuais.includes(id))
+  const remover = atuais.filter((id) => !novas.includes(id))
+
+  if (adicionar.length) {
+    await admin.from('documento_empresas').insert(
+      adicionar.map((empresaId) => ({ documento_id: documentoId, empresa_id: empresaId })),
+    )
+  }
+
+  for (const empresaId of remover) {
+    await admin
+      .from('documento_empresas')
+      .delete()
+      .eq('documento_id', documentoId)
+      .eq('empresa_id', empresaId)
+  }
+
+  for (const empresaId of [...new Set([...atuais, ...novas])]) {
+    await recalcularArmazenamentoEmpresa(empresaId)
+  }
+
+  revalidatePath(ROTAS.adm.documentos)
+  revalidatePath(ROTAS.docs.documentos)
+  for (const empresaId of novas) {
+    revalidatePath(ROTAS.adm.empresaDocumentos(empresaId))
+  }
+  for (const empresaId of remover) {
+    revalidatePath(ROTAS.adm.empresaDocumentos(empresaId))
+  }
+
+  return { sucesso: true }
 }

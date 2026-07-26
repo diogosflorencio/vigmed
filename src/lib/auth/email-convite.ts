@@ -10,7 +10,7 @@ export type ResultadoEmailConvite =
 
 /**
  * Envia e-mail de convite/acesso via Supabase Auth.
- * - Usuário novo: magic link (conta só é criada ao clicar — Google/cadastro continuam possíveis)
+ * - Usuário novo: magic link (conta só é criada ao clicar; Google/cadastro continuam possíveis)
  * - Usuário existente: magic link para entrar
  */
 export async function enviarEmailConviteAcesso(dados: {

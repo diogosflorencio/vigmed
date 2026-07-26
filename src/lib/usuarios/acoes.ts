@@ -133,6 +133,7 @@ export async function convidarUsuario(dados: DadosConvite) {
 
   revalidatePath(ROTAS.adm.usuarios)
   revalidatePath(ROTAS.docs.usuarios)
+  if (empresaId) revalidatePath(ROTAS.adm.empresa(empresaId))
 
   const mensagemEmail =
     emailResultado.tipo === 'acesso_novo'
@@ -176,6 +177,26 @@ export async function listarConvitesEPerfis() {
   if (erroEmpresas) console.error('[listarConvitesEPerfis] empresas:', erroEmpresas.message)
 
   return { convites: convites ?? [], perfis: perfis ?? [], empresas: empresas ?? [] }
+}
+
+export async function listarUsuariosPorEmpresa(empresaId: string) {
+  await exigirAutenticacao(['administrador'])
+  const admin = criarClienteSupabaseAdmin()
+
+  const [{ data: convites }, { data: perfis }] = await Promise.all([
+    admin
+      .from('convites_acesso')
+      .select('id, email, nome_completo, papel, usado_em, criado_em, ativo')
+      .eq('empresa_id', empresaId)
+      .order('criado_em', { ascending: false }),
+    admin
+      .from('perfis')
+      .select('id, email, nome_completo, papel, ativo, ultimo_login_em')
+      .eq('empresa_id', empresaId)
+      .order('criado_em', { ascending: false }),
+  ])
+
+  return { convites: convites ?? [], perfis: perfis ?? [] }
 }
 
 /** @deprecated Use listarConvitesEPerfis */
