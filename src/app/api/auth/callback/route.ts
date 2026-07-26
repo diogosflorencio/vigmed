@@ -15,8 +15,16 @@ export async function GET(requisicao: Request) {
   const { searchParams } = origem
   const codigo = searchParams.get('code')
   const tipo = searchParams.get('tipo')
+  const oauthErro = searchParams.get('error')
+  const oauthDescricao = searchParams.get('error_description')
 
   try {
+    if (oauthErro) {
+      console.error('[auth/callback] OAuth:', oauthErro, oauthDescricao)
+      const msg = encodeURIComponent(oauthDescricao ?? oauthErro)
+      return NextResponse.redirect(`${urlAuth}${ROTAS.auth.entrar}?erro=oauth&msg=${msg}`)
+    }
+
     if (!codigo) {
       return NextResponse.redirect(`${urlAuth}${ROTAS.auth.entrar}?erro=auth`)
     }

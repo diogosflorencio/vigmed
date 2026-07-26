@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Mail, Eye, EyeOff } from 'lucide-react'
 import { Button, Input, Card, CardContent, Separator } from '@/components/ui'
@@ -24,6 +25,19 @@ export function FormularioLogin({
   const [mostrarSenha, definirMostrarSenha] = useState(false)
   const [erro, definirErro] = useState('')
   const [pendente, iniciarTransicao] = useTransition()
+  const parametros = useSearchParams()
+
+  useEffect(() => {
+    const codigo = parametros.get('erro')
+    const msg = parametros.get('msg')
+    if (codigo === 'sem_acesso') {
+      definirErro('Sua conta não tem acesso. Use o e-mail do convite ou fale com o administrador.')
+    } else if (codigo === 'oauth' && msg) {
+      definirErro(decodeURIComponent(msg))
+    } else if (codigo === 'auth') {
+      definirErro('Não foi possível concluir o login. Tente novamente.')
+    }
+  }, [parametros])
 
   function aoEnviar(e: React.FormEvent) {
     e.preventDefault()

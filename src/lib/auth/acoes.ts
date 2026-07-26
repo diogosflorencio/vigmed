@@ -70,7 +70,7 @@ export async function cadastrarComEmail(
 
   if (error) {
     if (error.message.toLowerCase().includes('already registered')) {
-      return { erro: 'Este e-mail já possui conta. Use a página de entrar.' }
+      return { erro: 'Este e-mail já possui conta. Entre com senha, Google ou o link enviado por e-mail.' }
     }
     return { erro: error.message }
   }

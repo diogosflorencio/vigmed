@@ -2,25 +2,16 @@ import { criarClienteSupabaseAdmin } from '@/lib/supabase/admin'
 import type { AmbienteConvite } from '@/lib/auth/convites'
 import { urlBaseAuth } from '@/lib/auth/redirecionamento'
 import { ROTAS } from '@/lib/rotas'
+import { usuarioExisteNoAuth } from '@/lib/auth/usuario-auth'
 
 export type ResultadoEmailConvite =
-  | { enviado: true; tipo: 'convite' | 'acesso' }
+  | { enviado: true; tipo: 'acesso_novo' | 'acesso' }
   | { enviado: false; erro: string }
-
-function usuarioJaRegistrado(mensagem: string): boolean {
-  const m = mensagem.toLowerCase()
-  return (
-    m.includes('already') ||
-    m.includes('registered') ||
-    m.includes('exists') ||
-    m.includes('duplicate')
-  )
-}
 
 /**
  * Envia e-mail de convite/acesso via Supabase Auth.
- * - Usuário novo: inviteUserByEmail (link para definir senha)
- * - Usuário existente: magic link para entrar no sistema
+ * - Usuário novo: magic link (conta só é criada ao clicar — Google/cadastro continuam possíveis)
+ * - Usuário existente: magic link para entrar
  */
 export async function enviarEmailConviteAcesso(dados: {
   email: string
@@ -30,40 +21,28 @@ export async function enviarEmailConviteAcesso(dados: {
   const admin = criarClienteSupabaseAdmin()
   const urlBase = urlBaseAuth()
   const callback = `${urlBase}/api/auth/callback?tipo=convite`
-
-  const { error: erroConvite } = await admin.auth.admin.inviteUserByEmail(dados.email, {
-    redirectTo: callback,
-    data: {
-      nome_completo: dados.nomeCompleto?.trim() ?? '',
-      convite_ambiente: dados.ambiente,
-    },
-  })
-
-  if (!erroConvite) {
-    return { enviado: true, tipo: 'convite' }
+  const metadados = {
+    nome_completo: dados.nomeCompleto?.trim() ?? '',
+    convite_ambiente: dados.ambiente,
   }
 
-  if (!usuarioJaRegistrado(erroConvite.message)) {
-    return {
-      enviado: false,
-      erro: erroConvite.message || 'Não foi possível enviar o e-mail de convite.',
-    }
-  }
+  const jaExiste = await usuarioExisteNoAuth(dados.email)
 
-  const { error: erroOtp } = await admin.auth.signInWithOtp({
+  const { error } = await admin.auth.signInWithOtp({
     email: dados.email,
     options: {
-      shouldCreateUser: false,
-      emailRedirectTo: `${urlBase}${ROTAS.auth.entrar}`,
+      shouldCreateUser: !jaExiste,
+      emailRedirectTo: jaExiste ? `${urlBase}${ROTAS.auth.entrar}` : callback,
+      data: metadados,
     },
   })
 
-  if (erroOtp) {
+  if (error) {
     return {
       enviado: false,
-      erro: erroOtp.message || 'Não foi possível enviar o link de acesso.',
+      erro: error.message || 'Não foi possível enviar o e-mail de convite.',
     }
   }
 
-  return { enviado: true, tipo: 'acesso' }
+  return { enviado: true, tipo: jaExiste ? 'acesso' : 'acesso_novo' }
 }
