@@ -20,6 +20,7 @@ export function formatarData(iso: string): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: 'America/Sao_Paulo',
   })
 }
 
@@ -30,6 +31,7 @@ export function formatarDataHora(iso: string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
   })
 }
 
@@ -108,13 +110,3 @@ export function obterExtensao(nomeArquivo: string): string {
   const partes = nomeArquivo.split('.')
   return partes.length > 1 ? partes.pop()!.toLowerCase() : ''
 }
-
-// Aliases legados
-export const formatBytes = formatarBytes
-export const formatDate = formatarData
-export const formatDatetime = formatarDataHora
-export const getInitials = obterIniciais
-export const parseFileName = analisarNomeArquivo
-export const sanitizeFileNamePart = sanitizarParteNomeArquivo
-export const buildFileName = montarNomeArquivo
-export const slugify = gerarSlug

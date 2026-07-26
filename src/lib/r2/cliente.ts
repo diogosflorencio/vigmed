@@ -54,13 +54,22 @@ export async function gerarUrlUploadAssinada(
  * Gera URL assinada para download seguro (GET).
  * Expira em 15 minutos - nunca expor links permanentes.
  */
-export async function gerarUrlDownloadAssinada(chaveArquivo: string, nomeArquivo?: string) {
+export async function gerarUrlDownloadAssinada(
+  chaveArquivo: string,
+  nomeArquivo?: string,
+  opcoes?: { inline?: boolean },
+) {
   const cliente = criarClienteR2()
+  const inline = opcoes?.inline ?? false
   const comando = new GetObjectCommand({
     Bucket: nomeBucket(),
     Key: chaveArquivo,
     ...(nomeArquivo
-      ? { ResponseContentDisposition: `attachment; filename="${nomeArquivo}"` }
+      ? {
+          ResponseContentDisposition: inline
+            ? `inline; filename="${nomeArquivo}"`
+            : `attachment; filename="${nomeArquivo}"`,
+        }
       : {}),
   })
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { exigirAutenticacao, ehUsuarioEmpresa } from '@/lib/auth/sessao'
-import { recalcularArmazenamentoEmpresa } from '@/lib/documentos/armazenamento'
+import { exigirAutenticacao, ehAdministrador, ehUsuarioEmpresa } from '@/lib/auth/sessao'
+import { recalcularArmazenamentoEmpresa, obterConsumoCotaEmpresa } from '@/lib/documentos/armazenamento'
 import { origemPublicacaoDocumento } from '@/lib/documentos/upload'
 import { gerarUrlUploadAssinada, montarChaveArquivo } from '@/lib/r2/cliente'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
@@ -27,31 +27,52 @@ export async function POST(requisicao: Request) {
 
     const documentoId = randomUUID()
     const empresaUsuario = ehUsuarioEmpresa(perfil.papel) ? perfil.empresa_id : null
-    const empresaPrincipal = empresaUsuario ?? empresaIds?.[0] ?? perfil.empresa_id
 
-    if (!empresaPrincipal) {
-      return NextResponse.json({ erro: 'Empresa não informada' }, { status: 400 })
+    let idsEmpresas: string[]
+    if (empresaUsuario) {
+      if (empresaIds?.some((id: string) => id !== empresaUsuario)) {
+        return NextResponse.json({ erro: 'Sem permissão para esta empresa.' }, { status: 403 })
+      }
+      idsEmpresas = [empresaUsuario]
+    } else if (ehAdministrador(perfil.papel)) {
+      if (!Array.isArray(empresaIds) || empresaIds.length === 0) {
+        return NextResponse.json({ erro: 'Selecione ao menos uma empresa.' }, { status: 400 })
+      }
+      idsEmpresas = [...new Set(empresaIds as string[])]
+    } else {
+      return NextResponse.json({ erro: 'Sem permissão.' }, { status: 403 })
     }
 
-    if (empresaUsuario && empresaIds?.some((id: string) => id !== empresaUsuario)) {
-      return NextResponse.json({ erro: 'Sem permissão para esta empresa.' }, { status: 403 })
-    }
-
+    const empresaPrincipal = idsEmpresas[0]
     const supabase = await criarClienteSupabaseServidor()
     const tamanhoArquivo = tamanho ?? 0
+    const origem = origemPublicacaoDocumento(perfil)
+    const uploadAdmin = ehAdministrador(perfil.papel)
 
-    const { data: empresa } = await supabase
-      .from('empresas')
-      .select('armazenamento_usado, armazenamento_limite')
-      .eq('id', empresaPrincipal)
-      .single()
+    if (!uploadAdmin) {
+      for (const empresaId of idsEmpresas) {
+        const { data: empresa } = await supabase
+          .from('empresas')
+          .select('armazenamento_limite')
+          .eq('id', empresaId)
+          .single()
 
-    if (empresa && empresa.armazenamento_usado + tamanhoArquivo > empresa.armazenamento_limite) {
-      return NextResponse.json({ erro: 'Limite de armazenamento da empresa atingido.' }, { status: 400 })
+        if (!empresa) {
+          return NextResponse.json({ erro: 'Empresa não encontrada.' }, { status: 400 })
+        }
+
+        const consumoEmpresa = await obterConsumoCotaEmpresa(empresaId)
+
+        if (consumoEmpresa + tamanhoArquivo > empresa.armazenamento_limite) {
+          return NextResponse.json(
+            { erro: 'Limite de armazenamento da empresa atingido.' },
+            { status: 400 },
+          )
+        }
+      }
     }
 
     const chaveArquivo = montarChaveArquivo(empresaPrincipal, documentoId, nomeArquivo)
-    const origem = origemPublicacaoDocumento(perfil)
 
     const { error: erroInsert } = await supabase.from('documentos').insert({
       id: documentoId,
@@ -70,15 +91,14 @@ export async function POST(requisicao: Request) {
       return NextResponse.json({ erro: 'Erro ao registrar documento' }, { status: 500 })
     }
 
-    const idsEmpresas = empresaUsuario ? [empresaUsuario] : (empresaIds ?? [empresaPrincipal])
     await supabase.from('documento_empresas').insert(
-      idsEmpresas.map((empresaId: string) => ({
+      idsEmpresas.map((empresaId) => ({
         documento_id: documentoId,
         empresa_id: empresaId,
       })),
     )
 
-    for (const empresaId of [...new Set(idsEmpresas as string[])]) {
+    for (const empresaId of idsEmpresas) {
       await recalcularArmazenamentoEmpresa(empresaId)
     }
 

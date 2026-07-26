@@ -20,7 +20,7 @@ import {
   Input,
 } from '@/components/ui'
 import { salvarEmpresa } from '@/lib/empresas/acoes'
-import type { ConsumoArmazenamentoEmpresa } from '@/lib/documentos/armazenamento'
+import type { ConsumoArmazenamentoEmpresa, TotaisArmazenamentoPlataforma } from '@/lib/documentos/armazenamento'
 import { cn, formatarBytes, formatarCnpj } from '@/lib/utils'
 import type { Empresa, StatusEmpresa } from '@/types'
 
@@ -40,9 +40,10 @@ const ROTULO_STATUS: Record<StatusEmpresa, { rotulo: string; variant: 'success' 
 interface Props {
   empresasIniciais: Empresa[]
   consumoPorEmpresa: Record<string, ConsumoArmazenamentoEmpresa>
+  totaisArmazenamento: TotaisArmazenamentoPlataforma
 }
 
-export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
+export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArmazenamento }: Props) {
   const router = useRouter()
   const [busca, definirBusca] = useState('')
   const [statusFiltro, definirStatusFiltro] = useState<StatusEmpresa | 'todos'>('todos')
@@ -107,7 +108,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
     <SecaoPainel>
       <CabecalhoPagina
         titulo="Empresas"
-        descricao="Clientes e consumo de armazenamento (VIGMED vs empresa)."
+        descricao="Clientes e consumo de armazenamento (VIGMED ilimitado vs cota das empresas)."
         acoes={
           <Button variant="primary" size="sm" onClick={abrirNova}>
             <Plus size={15} />
@@ -115,6 +116,26 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
           </Button>
         }
       />
+
+      <RevelarScroll>
+        <div className="grid gap-3 sm:grid-cols-3 mb-4">
+          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
+            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">VIGMED (admin)</p>
+            <p className="mt-1 text-lg font-semibold text-(--color-text-1)">{formatarBytes(totaisArmazenamento.vigmed)}</p>
+            <p className="text-xs text-(--color-text-3)">Sem limite de upload</p>
+          </div>
+          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
+            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">Cota empresas</p>
+            <p className="mt-1 text-lg font-semibold text-(--color-text-1)">{formatarBytes(totaisArmazenamento.empresa)}</p>
+            <p className="text-xs text-(--color-text-3)">de {formatarBytes(totaisArmazenamento.limiteEmpresas)} disponível</p>
+          </div>
+          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
+            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">Total plataforma</p>
+            <p className="mt-1 text-lg font-semibold text-(--color-text-1)">{formatarBytes(totaisArmazenamento.total)}</p>
+            <p className="text-xs text-(--color-text-3)">VIGMED + arquivos das empresas</p>
+          </div>
+        </div>
+      </RevelarScroll>
 
       <RevelarScroll>
         <div className="painel-filtros">
@@ -154,7 +175,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
                   <th className="text-right">VIGMED</th>
                   <th className="text-right">Empresa</th>
                   <th className="text-right">Total</th>
-                  <th className="hidden lg:table-cell" style={{ minWidth: '9rem' }}>Uso</th>
+                  <th className="hidden lg:table-cell" style={{ minWidth: '9rem' }}>Cota empresa</th>
                   <th className="text-right">Ações</th>
                 </tr>
               </thead>
@@ -166,7 +187,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
                     vigmed: empresa.armazenamento_usado, empresa: 0,
                   }
                   const pct = empresa.armazenamento_limite
-                    ? Math.min((consumo.total / empresa.armazenamento_limite) * 100, 100)
+                    ? Math.min((consumo.empresa / empresa.armazenamento_limite) * 100, 100)
                     : 0
                   return (
                     <tr key={empresa.id} className={cn(empresa.status === 'inativo' && 'opacity-60')}>
@@ -191,7 +212,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa }: Props) {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="tabela-mono">{pct.toFixed(0)}% de {formatarBytes(empresa.armazenamento_limite)}</span>
+                          <span className="tabela-mono">{pct.toFixed(0)}% cota · {formatarBytes(consumo.empresa)} de {formatarBytes(empresa.armazenamento_limite)}</span>
                         </div>
                       </td>
                       <td>
