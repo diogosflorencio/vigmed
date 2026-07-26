@@ -23,6 +23,8 @@ export const ROTAS = {
     recuperar: '/recuperar',
     painel: '/adm/painel',
     empresas: '/adm/empresas',
+    empresa: (id: string) => `/adm/empresas/${id}`,
+    empresaDocumentos: (id: string) => `/adm/empresas/${id}/documentos`,
     usuarios: '/adm/usuarios',
     documentos: '/adm/documentos',
     comunicados: '/adm/comunicados',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { IconeAnimado } from '@/components/ui/icone-animado'
 import toast from 'react-hot-toast'
@@ -8,8 +8,8 @@ import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
 import { Badge, Button } from '@/components/ui'
-import { alternarCompartilhamentoDocumento, excluirDocumento } from '@/lib/documentos/acoes'
-import { ROTAS } from '@/lib/rotas'
+import { DialogoDetalheDocumento } from '@/components/documentos/DialogoDetalheDocumento'
+import { SeletorEmpresasUpload } from '@/components/documentos/SeletorEmpresasUpload'
 import { cn, formatarBytes, formatarData } from '@/lib/utils'
 
 interface DocumentoItem {
@@ -35,19 +35,40 @@ interface Props {
   categorias: { id: string; nome: string }[]
   modo: 'adm' | 'docs'
   perfilId?: string
+  empresaFixa?: { id: string; nome: string }
+  tituloPagina?: string
+  descricaoPagina?: string
 }
 
-export function PainelDocumentos({ documentos, empresas, categorias, modo, perfilId }: Props) {
+export function PainelDocumentos({
+  documentos,
+  empresas,
+  categorias,
+  modo,
+  perfilId,
+  empresaFixa,
+  tituloPagina,
+  descricaoPagina,
+}: Props) {
   const router = useRouter()
   const [busca, definirBusca] = useState('')
-  const [empresaId, definirEmpresaId] = useState('')
+  const [empresaId, definirEmpresaId] = useState(empresaFixa?.id ?? '')
   const [categoriaId, definirCategoriaId] = useState('')
-  const [empresasUpload, definirEmpresasUpload] = useState<string[]>([])
-  const [mostrarSelecaoEmpresas, definirMostrarSelecaoEmpresas] = useState(false)
+  const [empresasUpload, definirEmpresasUpload] = useState<string[]>(
+    empresaFixa ? [empresaFixa.id] : [],
+  )
+  const [documentoAberto, definirDocumentoAberto] = useState<DocumentoItem | null>(null)
   const [arrastando, definirArrastando] = useState(false)
   const [enviando, iniciarEnvio] = useTransition()
-  const [processando, iniciarProcessamento] = useTransition()
   const mostrarStats = modo === 'adm'
+  const mostrarSeletorEmpresas = modo === 'adm'
+
+  useEffect(() => {
+    if (empresaFixa) {
+      definirEmpresasUpload([empresaFixa.id])
+      definirEmpresaId(empresaFixa.id)
+    }
+  }, [empresaFixa])
 
   const filtrados = useMemo(() => {
     return documentos.filter((d) => {
@@ -67,7 +88,6 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
 
       if (modo === 'adm' && empresasUpload.length === 0) {
         toast.error('Selecione ao menos uma empresa para o upload.')
-        definirMostrarSelecaoEmpresas(true)
         return
       }
 
@@ -109,71 +129,6 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
     [empresasUpload, categoriaId, modo, router],
   )
 
-  async function baixar(documentoId: string) {
-    const res = await fetch('/api/download/presign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documentoId }),
-    })
-    const dados = await res.json()
-    if (!res.ok) {
-      toast.error(dados.erro ?? 'Erro ao baixar.')
-      return
-    }
-    window.open(dados.urlDownload, '_blank')
-  }
-
-  function alternarEmpresaUpload(id: string) {
-    definirEmpresasUpload((atual) =>
-      atual.includes(id) ? atual.filter((e) => e !== id) : [...atual, id],
-    )
-  }
-
-  function urlCompartilhamento(documentoId: string) {
-    const base =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
-      `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'vigmed.com.br'}`
-    return `${base}${ROTAS.doc.arquivo(documentoId)}`
-  }
-
-  function copiarLinkCompartilhamento(documentoId: string) {
-    const url = urlCompartilhamento(documentoId)
-    navigator.clipboard.writeText(url).then(
-      () => toast.success('Link copiado.'),
-      () => toast.error('Não foi possível copiar o link.'),
-    )
-  }
-
-  function excluir(documentoId: string, titulo: string) {
-    if (!confirm(`Excluir “${titulo}”? Esta ação não pode ser desfeita.`)) return
-    iniciarProcessamento(async () => {
-      const resultado = await excluirDocumento(documentoId)
-      if (resultado.erro) {
-        toast.error(resultado.erro)
-        return
-      }
-      toast.success('Documento excluído.')
-      router.refresh()
-    })
-  }
-
-  function alternarCompartilhamento(documentoId: string, permitir: boolean) {
-    iniciarProcessamento(async () => {
-      const resultado = await alternarCompartilhamentoDocumento(documentoId, permitir)
-      if (resultado.erro) {
-        toast.error(resultado.erro)
-        return
-      }
-      toast.success(permitir ? 'Compartilhamento ativado.' : 'Compartilhamento desativado.')
-      router.refresh()
-    })
-  }
-
-  function podeExcluir(doc: DocumentoItem) {
-    if (modo === 'adm') return true
-    return doc.enviado_por === perfilId && doc.origem_publicacao === 'empresa'
-  }
-
   function nomesEmpresas(doc: DocumentoItem) {
     const nomes = (doc.documento_empresas ?? [])
       .map((v) => v.empresas?.nome_fantasia)
@@ -184,11 +139,12 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
   return (
     <SecaoPainel>
       <CabecalhoPagina
-        titulo="Documentos"
+        titulo={tituloPagina ?? 'Documentos'}
         descricao={
-          modo === 'adm'
-            ? 'Envie arquivos para uma ou várias empresas, acompanhe acessos e compartilhamento.'
-            : 'Publique e acesse os arquivos da sua empresa.'
+          descricaoPagina ??
+          (modo === 'adm'
+            ? 'Envie arquivos para uma ou várias empresas. O mesmo arquivo é compartilhado via vínculos, sem duplicar no bucket.'
+            : 'Publique e acesse os arquivos da sua empresa.')
         }
         acoes={
           <label className="cursor-pointer">
@@ -205,44 +161,15 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
         }
       />
 
-      {modo === 'adm' && (
+      {mostrarSeletorEmpresas && (
         <RevelarScroll>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 mb-4">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between text-left"
-              onClick={() => definirMostrarSelecaoEmpresas((v) => !v)}
-            >
-              <span className="text-sm font-medium text-[var(--color-text-1)]">
-                Empresas destino do upload
-                {empresasUpload.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-[var(--color-text-3)]">
-                    ({empresasUpload.length} selecionada{empresasUpload.length > 1 ? 's' : ''})
-                  </span>
-                )}
-              </span>
-              <IconeAnimado nome={mostrarSelecaoEmpresas ? 'chevron-up' : 'chevron-down'} tamanho={14} />
-            </button>
-            {mostrarSelecaoEmpresas && (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {empresas.map((e) => (
-                  <label key={e.id} className="flex items-center gap-2 text-sm text-[var(--color-text-2)] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={empresasUpload.includes(e.id)}
-                      onChange={() => alternarEmpresaUpload(e.id)}
-                    />
-                    {e.nome_fantasia}
-                  </label>
-                ))}
-              </div>
-            )}
-            {empresasUpload.length === 0 && (
-              <p className="mt-2 text-xs text-[var(--color-warning)]">
-                Selecione ao menos uma empresa antes de enviar arquivos.
-              </p>
-            )}
-          </div>
+          <SeletorEmpresasUpload
+            empresas={empresas}
+            selecionadas={empresasUpload}
+            onChange={definirEmpresasUpload}
+            fixas={empresaFixa ? [empresaFixa.id] : []}
+            className="mb-4"
+          />
         </RevelarScroll>
       )}
 
@@ -257,7 +184,7 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
               onChange={(e) => definirBusca(e.target.value)}
             />
           </div>
-          {modo === 'adm' && (
+          {modo === 'adm' && !empresaFixa && (
             <>
               <select className="painel-select" value={empresaId} onChange={(e) => definirEmpresaId(e.target.value)}>
                 <option value="">Todas as empresas</option>
@@ -314,115 +241,71 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
               <thead className="painel-tabela-thead">
                 <tr>
                   <th>Documento</th>
-                  {modo === 'adm' && <th className="hidden md:table-cell">Empresas</th>}
+                  {modo === 'adm' && !empresaFixa && <th className="hidden md:table-cell">Empresas</th>}
                   <th className="hidden sm:table-cell">Categoria</th>
                   {mostrarStats && <th className="hidden lg:table-cell">Origem</th>}
                   <th className="hidden sm:table-cell">Tamanho</th>
-                  {mostrarStats && <th className="hidden xl:table-cell">Validade</th>}
                   {mostrarStats && <th className="hidden lg:table-cell">Views</th>}
                   {mostrarStats && <th className="hidden xl:table-cell">Downloads</th>}
-                  <th className="hidden md:table-cell">Compartilhar</th>
-                  <th className="text-right">Ações</th>
+                  <th className="hidden md:table-cell">Público</th>
                 </tr>
               </thead>
               <tbody className="painel-tabela-tbody">
-                {filtrados.map((doc) => {
-                  const vencido = doc.valido_ate && new Date(doc.valido_ate) < new Date()
-                  return (
-                    <tr key={doc.id}>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <IconeAnimado nome="file-text" tamanho={14} className="shrink-0 text-(--color-text-3)" />
-                          <div>
-                            <span className="tabela-nome">{doc.titulo}</span>
-                            <span className="tabela-sub">{formatarData(doc.criado_em)}</span>
-                          </div>
+                {filtrados.map((doc) => (
+                  <tr
+                    key={doc.id}
+                    className="cursor-pointer hover:bg-(--color-surface-2)"
+                    onClick={() => definirDocumentoAberto(doc)}
+                  >
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <IconeAnimado nome="file-text" tamanho={14} className="shrink-0 text-(--color-text-3)" />
+                        <div>
+                          <span className="tabela-nome">{doc.titulo}</span>
+                          <span className="tabela-sub">{formatarData(doc.criado_em)}</span>
                         </div>
-                      </td>
-                      {modo === 'adm' && (
-                        <td className="hidden md:table-cell">
-                          <span className="flex items-center gap-1 tabela-mono text-xs">{nomesEmpresas(doc)}</span>
-                        </td>
-                      )}
-                      <td className="hidden sm:table-cell">
-                        {doc.categorias ? (
-                          <Badge variant="default" className="text-[10px] py-0">
-                            {doc.categorias.nome}
-                          </Badge>
-                        ) : (
-                          <span className="tabela-mono">-</span>
-                        )}
-                      </td>
-                      {mostrarStats && (
-                        <td className="hidden lg:table-cell">
-                          <Badge
-                            variant={doc.origem_publicacao === 'empresa' ? 'default' : 'success'}
-                            className="text-[10px] py-0"
-                          >
-                            {doc.origem_publicacao === 'empresa' ? 'Empresa' : 'VIGMED'}
-                          </Badge>
-                        </td>
-                      )}
-                      <td className="hidden sm:table-cell tabela-mono">
-                        {doc.tamanho_arquivo ? formatarBytes(doc.tamanho_arquivo) : '-'}
-                      </td>
-                      {mostrarStats && (
-                        <td className={cn('hidden xl:table-cell tabela-mono', vencido && 'text-(--color-danger)')}>
-                          {doc.valido_ate ? formatarData(doc.valido_ate) : '-'}
-                        </td>
-                      )}
-                      {mostrarStats && (
-                        <td className="hidden lg:table-cell tabela-mono">{doc.total_visualizacoes ?? 0}</td>
-                      )}
-                      {mostrarStats && (
-                        <td className="hidden xl:table-cell">
-                          <span className="flex items-center gap-1 tabela-mono">
-                            <IconeAnimado nome="download" tamanho={11} /> {doc.total_downloads}
-                          </span>
-                        </td>
-                      )}
+                      </div>
+                    </td>
+                    {modo === 'adm' && !empresaFixa && (
                       <td className="hidden md:table-cell">
-                        <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={!!doc.permitir_compartilhar}
-                            disabled={processando}
-                            onChange={(e) => alternarCompartilhamento(doc.id, e.target.checked)}
-                          />
-                          {doc.permitir_compartilhar ? 'Público' : 'Privado'}
-                        </label>
+                        <span className="tabela-mono text-xs">{nomesEmpresas(doc)}</span>
                       </td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-1 flex-wrap">
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => baixar(doc.id)}>
-                            Baixar
-                          </Button>
-                          {doc.permitir_compartilhar && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => copiarLinkCompartilhamento(doc.id)}
-                            >
-                              Link
-                            </Button>
-                          )}
-                          {podeExcluir(doc) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs text-(--color-danger)"
-                              disabled={processando}
-                              onClick={() => excluir(doc.id, doc.titulo)}
-                            >
-                              Excluir
-                            </Button>
-                          )}
-                        </div>
+                    )}
+                    <td className="hidden sm:table-cell">
+                      {doc.categorias ? (
+                        <Badge variant="default" className="text-[10px] py-0">
+                          {doc.categorias.nome}
+                        </Badge>
+                      ) : (
+                        <span className="tabela-mono">-</span>
+                      )}
+                    </td>
+                    {mostrarStats && (
+                      <td className="hidden lg:table-cell">
+                        <Badge
+                          variant={doc.origem_publicacao === 'empresa' ? 'default' : 'success'}
+                          className="text-[10px] py-0"
+                        >
+                          {doc.origem_publicacao === 'empresa' ? 'Empresa' : 'VIGMED'}
+                        </Badge>
                       </td>
-                    </tr>
-                  )
-                })}
+                    )}
+                    <td className="hidden sm:table-cell tabela-mono">
+                      {doc.tamanho_arquivo ? formatarBytes(doc.tamanho_arquivo) : '-'}
+                    </td>
+                    {mostrarStats && (
+                      <td className="hidden lg:table-cell tabela-mono">{doc.total_visualizacoes ?? 0}</td>
+                    )}
+                    {mostrarStats && (
+                      <td className="hidden xl:table-cell tabela-mono">{doc.total_downloads}</td>
+                    )}
+                    <td className="hidden md:table-cell">
+                      <Badge variant={doc.permitir_compartilhar ? 'success' : 'default'} className="text-[10px] py-0">
+                        {doc.permitir_compartilhar ? 'Sim' : 'Não'}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -435,6 +318,17 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo, perfi
           )}
         </div>
       </RevelarScroll>
+
+      <p className="mt-2 text-xs text-(--color-text-3)">Clique em um documento para ver detalhes, preview e compartilhar.</p>
+
+      <DialogoDetalheDocumento
+        documento={documentoAberto}
+        aberto={!!documentoAberto}
+        onFechar={() => definirDocumentoAberto(null)}
+        empresas={empresas}
+        modo={modo}
+        perfilId={perfilId}
+      />
     </SecaoPainel>
   )
 }
