@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
 import { exigirAutenticacao, registrarAuditoria } from '@/lib/auth/sessao'
 import { normalizarEmail, type AmbienteConvite } from '@/lib/auth/convites'
 import { enviarEmailConviteAcesso } from '@/lib/auth/email-convite'
@@ -20,6 +19,15 @@ interface DadosConvite {
 
 const PAPEIS_ADM: PapelUsuario[] = ['administrador']
 const PAPEIS_DOCS: PapelUsuario[] = ['administrador_empresa', 'usuario_empresa']
+
+function erroConviteAmigavel(mensagem: string, codigo?: string): string {
+  if (codigo === '23505') return 'Já existe um convite pendente para este e-mail.'
+  if (codigo === '23503') return 'Empresa inválida. Selecione outra empresa.'
+  if (mensagem.includes('duplicate') || mensagem.includes('unique')) {
+    return 'Já existe um convite pendente para este e-mail.'
+  }
+  return mensagem || 'Não foi possível criar o convite.'
+}
 
 function validarPapelAmbiente(papel: PapelUsuario, ambiente: AmbienteConvite): string | null {
   if (ambiente === 'adm' && !PAPEIS_ADM.includes(papel)) {
@@ -64,9 +72,9 @@ export async function convidarUsuario(dados: DadosConvite) {
     return { erro: 'Selecione a empresa do convidado.' }
   }
 
-  const supabase = await criarClienteSupabaseServidor()
+  const admin = criarClienteSupabaseAdmin()
 
-  const { data: conviteExistente } = await supabase
+  const { data: conviteExistente } = await admin
     .from('convites_acesso')
     .select('id')
     .ilike('email', email)
@@ -80,7 +88,7 @@ export async function convidarUsuario(dados: DadosConvite) {
 
   const empresaId = dados.empresaId ?? (ehAdminEmpresa ? perfil.empresa_id : null)
 
-  const { data: convite, error } = await supabase
+  const { data: convite, error } = await admin
     .from('convites_acesso')
     .insert({
       email,
@@ -95,7 +103,8 @@ export async function convidarUsuario(dados: DadosConvite) {
     .single()
 
   if (error) {
-    return { erro: 'Não foi possível criar o convite.' }
+    console.error('[convidarUsuario]', error.code, error.message)
+    return { erro: erroConviteAmigavel(error.message, error.code) }
   }
 
   const emailResultado = await enviarEmailConviteAcesso({
@@ -105,7 +114,6 @@ export async function convidarUsuario(dados: DadosConvite) {
   })
 
   if (!emailResultado.enviado) {
-    const admin = criarClienteSupabaseAdmin()
     await admin.from('convites_acesso').delete().eq('id', convite.id)
     return {
       erro:
@@ -127,8 +135,8 @@ export async function convidarUsuario(dados: DadosConvite) {
   revalidatePath(ROTAS.docs.usuarios)
 
   const mensagemEmail =
-    emailResultado.tipo === 'convite'
-      ? 'E-mail de convite enviado. O usuário deve abrir a mensagem e definir a senha para acessar.'
+    emailResultado.tipo === 'acesso_novo'
+      ? 'E-mail enviado. O convidado pode abrir o link, entrar com Google ou ativar em /cadastro.'
       : 'E-mail de acesso enviado. O usuário já possui conta e receberá um link para entrar.'
 
   return {
@@ -142,25 +150,30 @@ export async function convidarUsuario(dados: DadosConvite) {
 export async function listarConvitesEPerfis() {
   await exigirAutenticacao(['administrador'])
 
-  const supabase = await criarClienteSupabaseServidor()
+  const admin = criarClienteSupabaseAdmin()
 
-  const [{ data: convites }, { data: perfis }, { data: empresas }] = await Promise.all([
-    supabase
-      .from('convites_acesso')
-      .select('*, empresas(nome_fantasia)')
-      .order('criado_em', { ascending: false })
-      .limit(50),
-    supabase
-      .from('perfis')
-      .select('id, email, nome_completo, papel, ativo, ultimo_login_em, empresas(nome_fantasia)')
-      .order('criado_em', { ascending: false })
-      .limit(50),
-    supabase
-      .from('empresas')
-      .select('id, nome_fantasia')
-      .eq('status', 'ativo')
-      .order('nome_fantasia'),
-  ])
+  const [{ data: convites, error: erroConvites }, { data: perfis, error: erroPerfis }, { data: empresas, error: erroEmpresas }] =
+    await Promise.all([
+      admin
+        .from('convites_acesso')
+        .select('*, empresas(nome_fantasia)')
+        .order('criado_em', { ascending: false })
+        .limit(50),
+      admin
+        .from('perfis')
+        .select('id, email, nome_completo, papel, ativo, ultimo_login_em, empresas(nome_fantasia)')
+        .order('criado_em', { ascending: false })
+        .limit(50),
+      admin
+        .from('empresas')
+        .select('id, nome_fantasia')
+        .eq('status', 'ativo')
+        .order('nome_fantasia'),
+    ])
+
+  if (erroConvites) console.error('[listarConvitesEPerfis] convites:', erroConvites.message)
+  if (erroPerfis) console.error('[listarConvitesEPerfis] perfis:', erroPerfis.message)
+  if (erroEmpresas) console.error('[listarConvitesEPerfis] empresas:', erroEmpresas.message)
 
   return { convites: convites ?? [], perfis: perfis ?? [], empresas: empresas ?? [] }
 }
@@ -176,23 +189,23 @@ export async function listarConvitesEmpresa() {
     return { convites: [], perfis: [], empresa: null }
   }
 
-  const supabase = await criarClienteSupabaseServidor()
+  const admin = criarClienteSupabaseAdmin()
 
   const [{ data: convites }, { data: perfis }, { data: empresa }] = await Promise.all([
-    supabase
+    admin
       .from('convites_acesso')
       .select('id, email, nome_completo, papel, usado_em, criado_em')
       .eq('empresa_id', perfil.empresa_id)
       .eq('ambiente', 'docs')
       .order('criado_em', { ascending: false })
       .limit(50),
-    supabase
+    admin
       .from('perfis')
       .select('id, email, nome_completo, papel, ativo, ultimo_login_em')
       .eq('empresa_id', perfil.empresa_id)
       .order('criado_em', { ascending: false })
       .limit(50),
-    supabase
+    admin
       .from('empresas')
       .select('id, nome_fantasia')
       .eq('id', perfil.empresa_id)
