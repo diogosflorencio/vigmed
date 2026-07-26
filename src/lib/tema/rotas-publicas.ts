@@ -23,17 +23,20 @@ function pathTemTemaClaro(path: string): boolean {
   )
 }
 
+function ehRotaPainel(path: string): boolean {
+  return path.startsWith('/adm/') || path.startsWith('/docs/')
+}
+
 /** Rotas e hosts que nunca herdam tema escuro salvo no painel */
 export function ehRotaPublica(pathname?: string, hostname?: string): boolean {
   const path = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '/')
   const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).split(':')[0]
 
+  if (ehRotaPainel(path)) return false
+
   if (pathTemTemaClaro(path)) return true
 
   const dominioRaiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'vigmed.com.br'
-  const hostInstitucional = host === dominioRaiz || host === `www.${dominioRaiz}`
-
-  if (hostInstitucional) return true
   if (host === `blog.${dominioRaiz}`) return true
 
   return false
@@ -68,7 +71,9 @@ export function gerarScriptTemaInicial(
     var host = window.location.hostname.split(':')[0];
     var root = ${JSON.stringify(dominioRaiz)};
     var prefixos = ${prefixos};
-    var hostSite = host === root || host === 'www.' + root;
+    function pathPainel(p) {
+      return p.indexOf('/adm/') === 0 || p.indexOf('/docs/') === 0;
+    }
 
     function pathClaro(p) {
       if (p === '/') return true;
@@ -79,7 +84,7 @@ export function gerarScriptTemaInicial(
       return false;
     }
 
-    var publico = pathClaro(path) || hostSite || host === 'blog.' + root;
+    var publico = !pathPainel(path) && (pathClaro(path) || host === 'blog.' + root);
 
     if (publico) {
       document.documentElement.dataset.theme = 'light';
