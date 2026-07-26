@@ -1,0 +1,78 @@
+-- ============================================================
+-- VIGMED - Blog público (blog.vigmed.com.br)
+-- ============================================================
+
+do $$ begin
+  create type public.status_post_blog as enum ('rascunho', 'publicado', 'arquivado');
+exception when duplicate_object then null;
+end $$;
+
+create table if not exists public.posts_blog (
+  id                  uuid primary key default gen_random_uuid(),
+  criado_em           timestamptz not null default now(),
+  atualizado_em       timestamptz not null default now(),
+  titulo              text not null,
+  slug                text not null unique,
+  resumo              text,
+  corpo_html          text not null default '',
+  imagem_capa_url     text,
+  imagem_capa_chave   text,
+  meta_titulo         text,
+  meta_descricao      text,
+  tags                text[] not null default '{}',
+  status              public.status_post_blog not null default 'rascunho',
+  publicado_em        timestamptz,
+  autor_id            uuid references public.perfis(id) on delete set null,
+  total_visualizacoes bigint not null default 0,
+  metadados           jsonb not null default '{}'::jsonb
+);
+
+create index if not exists idx_posts_blog_slug on public.posts_blog (slug);
+create index if not exists idx_posts_blog_status on public.posts_blog (status, publicado_em desc);
+create index if not exists idx_posts_blog_busca on public.posts_blog
+  using gin (to_tsvector('portuguese', coalesce(titulo, '') || ' ' || coalesce(resumo, '') || ' ' || coalesce(corpo_html, '')));
+
+create table if not exists public.blog_visualizacoes (
+  id            uuid primary key default gen_random_uuid(),
+  post_id       uuid not null references public.posts_blog(id) on delete cascade,
+  visualizado_em timestamptz not null default now(),
+  origem        text,
+  usuario_id    uuid references public.perfis(id) on delete set null,
+  sessao_hash   text
+);
+
+create index if not exists idx_blog_visualizacoes_post on public.blog_visualizacoes (post_id, visualizado_em desc);
+
+-- Trigger atualizado_em
+drop trigger if exists trg_posts_blog_atualizado on public.posts_blog;
+create trigger trg_posts_blog_atualizado
+  before update on public.posts_blog
+  for each row execute function public.atualizar_data_modificacao();
+
+alter table public.posts_blog enable row level security;
+alter table public.blog_visualizacoes enable row level security;
+
+-- Posts: leitura pública de publicados
+drop policy if exists posts_blog_select_publico on public.posts_blog;
+create policy posts_blog_select_publico on public.posts_blog
+  for select
+  using (
+    status = 'publicado'
+    and publicado_em is not null
+    and publicado_em <= now()
+  );
+
+-- Posts: admins gerenciam tudo
+drop policy if exists posts_blog_admin on public.posts_blog;
+create policy posts_blog_admin on public.posts_blog
+  for all
+  using (public.eh_administrador())
+  with check (public.eh_administrador());
+
+-- Visualizações: admins leem estatísticas
+drop policy if exists blog_visualizacoes_admin_select on public.blog_visualizacoes;
+create policy blog_visualizacoes_admin_select on public.blog_visualizacoes
+  for select
+  using (public.eh_administrador());
+
+-- Inserção de visualizações via service role (API) - sem policy anon

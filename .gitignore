@@ -1,0 +1,16 @@
+# Dependências
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build
+tsconfig.tsbuildinfo
