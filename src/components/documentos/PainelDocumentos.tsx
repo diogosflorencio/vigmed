@@ -153,7 +153,7 @@ export function PainelDocumentos({ documentos, empresas, categorias, modo }: Pro
           onClick={() => document.getElementById('upload-input-docs')?.click()}
         >
           <IconeAnimado nome="cloud-upload" tamanho={14} />
-          Arraste um arquivo ou clique para enviar - PDF, DOCX e planilhas até 50 MB
+          Arraste um arquivo ou clique para enviar. PDF, DOCX e planilhas até 50 MB.
           <input id="upload-input-docs" type="file" className="hidden" onChange={(e) => e.target.files?.[0] && enviarArquivo(e.target.files[0])} />
         </div>
       </RevelarScroll>

@@ -29,7 +29,7 @@ interface PropsIconeAnimadoDireto {
   animar?: boolean
 }
 
-/** Ícone @animateicons/react — anima ao hover/foco no ícone ou no ancestral interativo */
+/** Ícone @animateicons/react; anima ao hover/foco no ícone ou no ancestral interativo */
 export function IconeAnimado({ nome, tamanho = 16, className, animar = true }: PropsIconeAnimado) {
   const entrada = ICONES_ANIMADOS[nome]
   return <IconeAnimadoEntrada entrada={entrada} tamanho={tamanho} className={className} animar={animar} />

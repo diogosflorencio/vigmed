@@ -712,7 +712,7 @@ button {
   user-select: none;
 }
 
-/* Grade unificada — stats, ambientes, recursos e pilares */
+/* Grade unificada: stats, ambientes, recursos e pilares */
 .landing-grade {
   margin-top: 2.5rem;
   display: grid;
@@ -742,29 +742,32 @@ button {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--color-surface-2);
+  min-height: 100%;
+  gap: 1px;
+  background: var(--color-border);
 }
 
 .landing-grade-intro-linha {
   padding: 1.1rem 1.15rem;
-  border-bottom: 1px solid var(--color-border);
-  background: #fff;
-}
-
-.landing-grade-intro-linha:first-child {
-  background: #fff;
-}
-
-.landing-grade-intro-linha:nth-child(2) {
   background: var(--color-surface-2);
 }
 
-.landing-grade-intro-linha:last-child {
-  border-bottom: none;
+.landing-grade-intro-linha--acesso {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
-.landing-grade-intro-linha--acesso {
-  background: var(--color-surface-3);
+.landing-intro-acesso {
+  margin: 0;
+  width: 100%;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-2);
 }
 
 .landing-intro-titulo {
@@ -781,13 +784,6 @@ button {
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--color-text-1);
-}
-
-.landing-intro-acesso {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: var(--color-text-2);
 }
 
 .landing-intro-acesso a {
@@ -2295,7 +2291,7 @@ html {
   }
 }
 
-/* Sistema VIGMED — painel standalone (legado) */
+/* Sistema VIGMED, painel standalone (legado) */
 .landing-vigmed:not(.landing-vigmed--grade) {
   width: 100%;
   max-width: 21rem;

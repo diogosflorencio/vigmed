@@ -20,15 +20,15 @@ function ColunaAtualizacoes({ registros }: { registros: typeof ATUALIZACOES_VIGM
   )
 }
 
-/** Lista de versões — mesmo estilo do painel */
+/** Lista de versões, mesmo estilo do painel */
 export function ListaAtualizacoesAdm() {
   return (
     <article className="painel-estatisticas" aria-label="Atualizações da plataforma">
       <header className="painel-estat-topo">
         <h1 className="painel-estat-titulo">Atualizações</h1>
         <p className="painel-estat-texto">
-          Versão atual <strong className="painel-estat-num">v{VERSAO_ATUAL}</strong> — histórico de
-          junho/2026
+          Versão atual <strong className="painel-estat-num">v{VERSAO_ATUAL}</strong>. Histórico de
+          junho/2026.
         </p>
       </header>
 

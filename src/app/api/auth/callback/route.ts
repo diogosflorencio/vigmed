@@ -6,7 +6,7 @@ import { ambienteDoPapel, urlBaseAuth, urlPainelPorPapel } from '@/lib/auth/redi
 import { obterUrlBaseDoAmbiente } from '@/lib/ambiente'
 import { ROTAS } from '@/lib/rotas'
 
-/** Callback OAuth (Google) e redefinição de senha — redireciona pelo papel */
+/** Callback OAuth (Google) e redefinição de senha; redireciona pelo papel */
 export async function GET(requisicao: Request) {
   const { searchParams } = new URL(requisicao.url)
   const codigo = searchParams.get('code')

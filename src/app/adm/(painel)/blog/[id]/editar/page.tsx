@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { FormularioPostBlog } from '@/components/blog/FormularioPostBlog'
 import { obterPostBlogAdmin } from '@/lib/blog/acoes'
 
-export const metadata = { title: 'Editar post - Blog VIGMED Admin' }
+export const metadata = { title: 'Editar post · Blog VIGMED Admin' }
 
 export default async function PaginaEditarPostBlog({
   params,

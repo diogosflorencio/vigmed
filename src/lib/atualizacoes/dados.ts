@@ -4,7 +4,7 @@ export interface RegistroAtualizacao {
   itens: string[]
 }
 
-/** Histórico de versões — jun/2026, 0.0.1 → 1.0.0 */
+/** Histórico de versões (jun/2026, 0.0.1 → 1.0.0) */
 export const ATUALIZACOES_VIGMED: RegistroAtualizacao[] = [
   {
     versao: '0.0.1',

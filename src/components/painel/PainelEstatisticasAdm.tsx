@@ -100,7 +100,7 @@ export function PainelEstatisticasAdm({ dados }: Props) {
             <Ascii conteudo={blocoBarras(empresasItens)} />
             <Texto>
               Armazenamento <N>{formatarBytes(e.armazenamentoUsado)}</N> de{' '}
-              <N>{formatarBytes(e.armazenamentoLimite)}</N> - média <N>{formatarBytes(e.mediaArmazenamento)}</N> por
+              <N>{formatarBytes(e.armazenamentoLimite)}</N>, média <N>{formatarBytes(e.mediaArmazenamento)}</N> por
               empresa
               {e.maiorConsumo ? (
                 <>

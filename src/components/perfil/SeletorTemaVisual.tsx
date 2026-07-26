@@ -9,7 +9,7 @@ interface Props {
   className?: string
 }
 
-/** Seletor de tema — mesmo padrão visual do modo claro/escuro */
+/** Seletor de tema, mesmo padrão visual do modo claro/escuro */
 export function SeletorTemaVisual({ className }: Props) {
   const { temaVisual, definirTemaVisual } = useTheme()
 

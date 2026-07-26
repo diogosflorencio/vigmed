@@ -16,7 +16,7 @@ interface ParModos {
   dark: VariaveisTema
 }
 
-/** Superfícies neutras — cor fica no acento, não no fundo inteiro */
+/** Superfícies neutras; cor fica no acento, não no fundo inteiro */
 const SUP_CLARO: [string, string, string] = ['#ffffff', '#f6f6f6', '#ebebeb']
 const TXT_CLARO: [string, string, string] = ['#111111', '#484848', '#767676']
 const BDR_CLARO: [string, string] = ['#e2e2e2', '#9a9a9a']
@@ -101,12 +101,12 @@ function temaVivo(accentClaro: string, accentFgClaro: string, accentEscuro: stri
   }
 }
 
-/** Registro central — adicione frutas aqui */
+/** Registro central; adicione frutas aqui */
 export const REGISTRO_TEMAS: readonly (MetaTemaVisual & { modos: ParModos })[] = [
   {
     id: 'banana',
     rotulo: 'Banana',
-    descricao: 'Neutro escuro — banana madura. Alto contraste.',
+    descricao: 'Neutro escuro com acento banana madura. Alto contraste.',
     preview: ['#f8f8f7', '#2e3038', '#ececea'],
     modos: {
       light: montarTokens(

@@ -57,7 +57,7 @@ const AMBIENTES = [
 const PILARES = [
   {
     titulo: 'Menu no celular',
-    descricao: 'Itens agrupados por área — gestão, conteúdo, sistema.',
+    descricao: 'Itens agrupados por área: gestão, conteúdo e sistema.',
   },
   {
     titulo: 'Permissões visíveis',
@@ -209,7 +209,6 @@ export function LandingInstitucional() {
             © {new Date().getFullYear()} VIGMED
           </p>
           <nav className="landing-footer-nav" aria-label="Acesso ao sistema">
-            <Link href={ROTAS.auth.entrar}>Entrar</Link>
             <span className="landing-footer-sep" aria-hidden>·</span>
             <span>adm.vigmed.com.br</span>
             <span className="landing-footer-sep" aria-hidden>·</span>

@@ -14,12 +14,12 @@ export const OPCOES_VARIANTE_MENU: OpcaoVarianteMenu[] = [
   {
     id: 'lateral',
     rotulo: 'Barra lateral',
-    descricao: 'Menu fixo à esquerda, grupos expansíveis - estilo painel corporativo',
+    descricao: 'Menu fixo à esquerda, grupos expansíveis, estilo painel corporativo',
   },
   {
     id: 'dock',
     rotulo: 'Dock inferior',
-    descricao: 'Ícones na base da tela - estilo app mobile / macOS dock',
+    descricao: 'Ícones na base da tela, estilo app mobile / macOS dock',
   },
   {
     id: 'trilho',

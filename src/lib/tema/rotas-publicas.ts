@@ -39,7 +39,7 @@ export function ehRotaPublica(pathname?: string, hostname?: string): boolean {
   return false
 }
 
-/** Script inline no <head> — evita flash de tema escuro antes do React */
+/** Script inline no <head>; evita flash de tema escuro antes do React */
 export function gerarScriptTemaInicial(
   dominioRaiz: string,
   mapaVariaveis: Record<string, { light: Record<string, string>; dark: Record<string, string> }>,

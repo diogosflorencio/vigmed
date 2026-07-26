@@ -13,7 +13,7 @@ interface PropsFormularioLogin {
   permitirCadastro?: boolean
 }
 
-/** Formulário de login unificado — redireciona ao painel conforme o papel */
+/** Formulário de login unificado; redireciona ao painel conforme o papel */
 export function FormularioLogin({
   titulo = 'Entrar',
   subtitulo = 'Acesse sua conta VIGMED',

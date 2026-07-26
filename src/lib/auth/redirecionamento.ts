@@ -14,7 +14,7 @@ export function caminhoPainelPorPapel(papel: PapelUsuario): string {
   return ehAdministrador(papel) ? ROTAS.adm.painel : ROTAS.docs.painel
 }
 
-/** URL absoluta do painel — respeita subdomínio em produção */
+/** URL absoluta do painel; respeita subdomínio em produção */
 export function urlPainelPorPapel(papel: PapelUsuario): string {
   const ambiente = ambienteDoPapel(papel)
   const base = obterUrlBaseDoAmbiente(ambiente)

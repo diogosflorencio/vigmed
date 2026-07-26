@@ -1,7 +1,7 @@
 /** Claro, escuro ou seguir o sistema */
 export type ModoTema = 'light' | 'dark' | 'system'
 
-/** Temas visuais do painel — nomes de frutas */
+/** Temas visuais do painel (nomes de frutas) */
 export type IdTemaVisual = 'banana' | 'limao' | 'mirtilo' | 'acai'
 
 export interface PreferenciasAparencia {

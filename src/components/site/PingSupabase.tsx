@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-/** Uma requisição por visita ao site — evita pausa do Supabase free tier */
+/** Uma requisição por visita ao site, evita pausa do Supabase free tier */
 export function PingSupabase() {
   const enviado = useRef(false)
 

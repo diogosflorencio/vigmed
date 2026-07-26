@@ -2,7 +2,7 @@ import { listarEmpresas } from '@/lib/empresas/acoes'
 import { obterConsumoPorEmpresas } from '@/lib/documentos/armazenamento'
 import { PainelEmpresas } from '@/components/empresas/PainelEmpresas'
 
-export const metadata = { title: 'Empresas - VIGMED Admin' }
+export const metadata = { title: 'Empresas · VIGMED Admin' }
 
 export default async function PaginaEmpresas() {
   const { empresas } = await listarEmpresas()

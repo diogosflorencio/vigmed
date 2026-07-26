@@ -23,5 +23,5 @@ export function tituloAuth(ambiente: AmbienteApp, tipo: 'entrar' | 'cadastro' | 
     cadastro: 'Ativar conta',
     recuperar: 'Recuperar senha',
   }
-  return `${acoes[tipo]} - ${portal}`
+  return `${acoes[tipo]} · ${portal}`
 }

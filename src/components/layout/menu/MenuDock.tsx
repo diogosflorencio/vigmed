@@ -146,7 +146,7 @@ function ItemCategoria({
   )
 }
 
-/** Dock inferior — desktop plano; mobile com categorias e subitens */
+/** Dock inferior: desktop plano; mobile com categorias e subitens */
 export function MenuDock({ itens, ambiente, perfil }: Props) {
   const caminho = usePathname()
   const areas = listarAreas(itens)

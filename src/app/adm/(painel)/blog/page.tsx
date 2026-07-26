@@ -1,7 +1,7 @@
 import { PainelBlogAdm } from '@/components/blog/PainelBlogAdm'
 import { listarPostsBlogAdmin, obterEstatisticasPosts } from '@/lib/blog/acoes'
 
-export const metadata = { title: 'Blog - VIGMED Admin' }
+export const metadata = { title: 'Blog · VIGMED Admin' }
 
 export default async function PaginaBlogAdmin() {
   const { posts } = await listarPostsBlogAdmin()

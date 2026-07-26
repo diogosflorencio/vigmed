@@ -20,7 +20,7 @@ html[data-tema-animar] [data-slot='button']:not(:active) {
     box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Fallback antes do JS — Banana claro (padrão) */
+/* Fallback antes do JS: Banana claro (padrão) */
 :root,
 [data-tema='banana'][data-theme='light'],
 [data-theme='light']:not([data-tema]) {

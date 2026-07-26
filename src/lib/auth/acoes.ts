@@ -8,7 +8,7 @@ import { validarPerfilAposAutenticacao } from '@/lib/auth/perfil-servidor'
 import { urlBaseAuth, urlPainelPorPapel } from '@/lib/auth/redirecionamento'
 import { ROTAS } from '@/lib/rotas'
 
-/** Login com e-mail e senha — redireciona ao painel conforme o papel */
+/** Login com e-mail e senha; redireciona ao painel conforme o papel */
 export async function entrarComEmail(email: string, senha: string) {
   const supabase = await criarClienteSupabaseServidor()
   const emailNormalizado = normalizarEmail(email)

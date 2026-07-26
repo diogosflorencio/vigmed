@@ -10,7 +10,7 @@ export interface TemaVisualMeta {
   preview: [string, string, string]
 }
 
-/** Metadados dos temas — derivados do registro central */
+/** Metadados dos temas, derivados do registro central */
 export const TEMAS_VISUAIS: TemaVisualMeta[] = REGISTRO_TEMAS.map(({ id, rotulo, descricao, preview }) => ({
   id,
   rotulo,

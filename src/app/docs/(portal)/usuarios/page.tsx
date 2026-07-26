@@ -4,7 +4,7 @@ import { listarConvitesEmpresa } from '@/lib/usuarios/acoes'
 import { PainelUsuariosEmpresa } from '@/components/usuarios/PainelUsuariosEmpresa'
 import { ROTAS } from '@/lib/rotas'
 
-export const metadata = { title: 'Usuários - VIGMED Docs' }
+export const metadata = { title: 'Usuários · VIGMED Docs' }
 
 export default async function PaginaUsuariosDocs() {
   const perfil = await obterPerfilAtual()

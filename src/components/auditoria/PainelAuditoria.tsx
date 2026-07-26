@@ -169,7 +169,7 @@ export function PainelAuditoria({ registros, total, pagina, porPagina, totalPagi
             </div>
           ) : (
             <div className="painel-tabela-rodape">
-              <span>Mostrando {inicio}–{fim} de {total.toLocaleString('pt-BR')} registros</span>
+              <span>Mostrando {inicio} a {fim} de {total.toLocaleString('pt-BR')} registros</span>
               <span>Página {pagina} de {totalPaginas || 1}</span>
             </div>
           )}

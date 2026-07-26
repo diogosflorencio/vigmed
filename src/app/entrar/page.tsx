@@ -1,7 +1,7 @@
 import { FormularioLogin } from '@/components/auth/FormularioLogin'
 import { CascaAuth } from '@/components/auth/CascaAuth'
 
-export const metadata = { title: 'Entrar - VIGMED' }
+export const metadata = { title: 'Entrar · VIGMED' }
 
 export default function PaginaEntrar() {
   return (

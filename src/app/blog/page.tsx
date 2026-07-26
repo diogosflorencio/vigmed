@@ -5,7 +5,7 @@ import { listarPostsBlogPublicos } from '@/lib/blog/acoes'
 import { ROTAS } from '@/lib/rotas'
 
 export const metadata: Metadata = {
-  title: 'Blog VIGMED - Artigos sobre gestão documental e compliance',
+  title: 'Blog VIGMED · Artigos sobre gestão documental e compliance',
   description:
     'Artigos, novidades e conteúdos da VIGMED sobre gestão segura de documentos corporativos, compliance e boas práticas.',
   robots: { index: true, follow: true },

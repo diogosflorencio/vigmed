@@ -8,7 +8,7 @@ import { cadastrarComEmail } from '@/lib/auth/acoes'
 import { ROTAS } from '@/lib/rotas'
 import toast from 'react-hot-toast'
 
-/** Cadastro com convite — e-mail deve estar autorizado previamente */
+/** Cadastro com convite; e-mail deve estar autorizado previamente */
 export function FormularioCadastro() {
   const [nome, definirNome] = useState('')
   const [email, definirEmail] = useState('')
