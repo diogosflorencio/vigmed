@@ -235,4 +235,7 @@ export async function listarConvitesEmpresa() {
 
   return {
     convites: convites ?? [],
-   
+    perfis: perfis ?? [],
+    empresa: empresa ?? null,
+  }
+}
