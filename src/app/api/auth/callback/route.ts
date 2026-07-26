@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 import { registrarAuditoria } from '@/lib/auth/sessao'
 import { validarPerfilAposAutenticacao } from '@/lib/auth/perfil-servidor'
 import {
@@ -8,8 +8,45 @@ import {
 } from '@/lib/auth/redirecionamento'
 import { ROTAS } from '@/lib/rotas'
 
+/** Copia cookies de sessão (PKCE) para o redirect final */
+function redirecionarComCookies(respostaOrigem: NextResponse, url: string) {
+  const destino = NextResponse.redirect(url)
+  respostaOrigem.cookies.getAll().forEach((cookie) => {
+    destino.cookies.set(cookie)
+  })
+  return destino
+}
+
+function criarSupabaseCallback(requisicao: NextRequest) {
+  let respostaComCookies = NextResponse.next({ request: requisicao })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return requisicao.cookies.getAll()
+        },
+        setAll(cookiesParaDefinir: { name: string; value: string; options: CookieOptions }[]) {
+          cookiesParaDefinir.forEach(({ name, value }) => requisicao.cookies.set(name, value))
+          respostaComCookies = NextResponse.next({ request: requisicao })
+          cookiesParaDefinir.forEach(({ name, value, options }) =>
+            respostaComCookies.cookies.set(name, value, options),
+          )
+        },
+      },
+    },
+  )
+
+  return {
+    supabase,
+    obterRespostaComCookies: () => respostaComCookies,
+  }
+}
+
 /** Callback OAuth (Google) e redefinição de senha; redireciona pelo papel */
-export async function GET(requisicao: Request) {
+export async function GET(requisicao: NextRequest) {
   const origem = new URL(requisicao.url)
   const urlAuth = `${origem.protocol}//${origem.host}`
   const { searchParams } = origem
@@ -29,7 +66,7 @@ export async function GET(requisicao: Request) {
       return NextResponse.redirect(`${urlAuth}${ROTAS.auth.entrar}?erro=auth`)
     }
 
-    const supabase = await criarClienteSupabaseServidor()
+    const { supabase, obterRespostaComCookies } = criarSupabaseCallback(requisicao)
     const { data, error } = await supabase.auth.exchangeCodeForSession(codigo)
 
     if (error || !data.user) {
@@ -44,7 +81,10 @@ export async function GET(requisicao: Request) {
 
     if ('erro' in validacao) {
       await supabase.auth.signOut()
-      return NextResponse.redirect(`${urlAuth}${ROTAS.auth.entrar}?erro=sem_acesso`)
+      return redirecionarComCookies(
+        obterRespostaComCookies(),
+        `${urlAuth}${ROTAS.auth.entrar}?erro=sem_acesso`,
+      )
     }
 
     const { perfil } = validacao
@@ -67,7 +107,7 @@ export async function GET(requisicao: Request) {
         ? `${urlAuth}/${ambiente}/perfil?redefinir=1`
         : urlPainelNaOrigem(perfil.papel, urlAuth)
 
-    return NextResponse.redirect(destino)
+    return redirecionarComCookies(obterRespostaComCookies(), destino)
   } catch (erro) {
     console.error('[auth/callback] Erro não tratado:', erro)
     return NextResponse.redirect(`${urlAuth}${ROTAS.auth.entrar}?erro=auth`)
