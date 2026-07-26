@@ -103,7 +103,7 @@ export function PainelEstatisticasAdm({ dados }: Props) {
             </Texto>
             <Ascii conteudo={blocoBarras(empresasItens)} />
             <Texto>
-              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N> — sem limite · Cota empresas{' '}
+              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N>, sem limite · Cota empresas{' '}
               <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
               <N>{formatarBytes(e.armazenamentoLimite)}</N>, média{' '}
               <N>{formatarBytes(e.mediaArmazenamento)}</N> por empresa

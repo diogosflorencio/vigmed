@@ -8,7 +8,7 @@ function normalizarUrlBase(url: string): string {
 }
 
 /**
- * Funções usadas no proxy (Edge). Sem Zod — evita falha de bundle no runtime.
+ * Funções usadas no proxy (Edge). Sem Zod, evita falha de bundle no runtime.
  */
 export function obterAmbienteDoHost(hostname: string): AmbienteApp {
   const dominioRaiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'vigmed.com.br'
