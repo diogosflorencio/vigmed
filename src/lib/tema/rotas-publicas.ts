@@ -10,6 +10,7 @@ export const PREFERENCIAS_TEMA_PUBLICO: PreferenciasAparencia = {
 export const PREFIXOS_ROTA_TEMA_CLARO = [
   '/site',
   '/blog',
+  '/doc',
   '/entrar',
   '/cadastro',
   '/recuperar',
@@ -94,21 +95,10 @@ export function gerarScriptTemaInicial(
       return;
     }
 
-    var legado = localStorage.getItem('fds-theme');
-    if (legado && !localStorage.getItem('vigmed-theme')) {
-      localStorage.setItem('vigmed-theme', legado);
-      localStorage.removeItem('fds-theme');
-    }
     var modo = localStorage.getItem('vigmed-theme') || 'system';
-    var temaRaw = localStorage.getItem('vigmed-tema-visual') || localStorage.getItem('vigmed-paleta') || 'banana';
-    var mapaLegado = {
-      azul: 'mirtilo', vigmed: 'mirtilo', mirtilo: 'mirtilo',
-      verde: 'limao', floresta: 'limao', kiwi: 'limao', limao: 'limao',
-      violeta: 'acai', oceano: 'acai', acai: 'acai', uva: 'acai',
-      neutro: 'banana', ardosia: 'banana', figo: 'banana', banana: 'banana'
-    };
-    var tema = mapaLegado[temaRaw] || temaRaw;
-    if (['banana','limao','mirtilo','acai'].indexOf(tema) < 0) tema = 'banana';
+    var temaRaw = localStorage.getItem('vigmed-tema-visual') || 'banana';
+    var temas = ['banana','limao','azulao','acai'];
+    var tema = temas.indexOf(temaRaw) >= 0 ? temaRaw : 'banana';
     var escuro = modo === 'dark' || (modo !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = escuro ? 'dark' : 'light';
     document.documentElement.dataset.tema = tema;

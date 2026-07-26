@@ -22,7 +22,3 @@ export function obterTemaVisual(id: IdTemaVisual) {
   const def = obterDefinicaoTema(id)
   return { id: def.id, rotulo: def.rotulo, descricao: def.descricao, preview: def.preview }
 }
-
-/** @deprecated Use TEMAS_VISUAIS */
-export const PALETAS = TEMAS_VISUAIS
-export const obterPaleta = obterTemaVisual

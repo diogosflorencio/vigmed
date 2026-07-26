@@ -128,8 +128,8 @@ export const REGISTRO_TEMAS: readonly (MetaTemaVisual & { modos: ParModos })[] =
     },
   },
   {
-    id: 'mirtilo',
-    rotulo: 'Mirtilo',
+    id: 'azulao',
+    rotulo: 'Azulão',
     descricao: 'Azul intenso em fundo neutro. Corporativo e direto.',
     preview: ['#ffffff', '#0038a8', '#f0f0f0'],
     modos: temaVivo('#0038a8', '#ffffff', '#5b9aff', '#0a1020'),

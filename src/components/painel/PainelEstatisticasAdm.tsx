@@ -40,7 +40,9 @@ export function PainelEstatisticasAdm({ dados }: Props) {
     dados
 
   const pctArmazenamento =
-    e.armazenamentoLimite > 0 ? Math.round((e.armazenamentoUsado / e.armazenamentoLimite) * 100) : 0
+    e.armazenamentoLimite > 0
+      ? Math.round((e.armazenamentoEmpresas / e.armazenamentoLimite) * 100)
+      : 0
 
   const empresasItens = [
     { nome: 'Ativas', valor: e.ativas },
@@ -85,7 +87,9 @@ export function PainelEstatisticasAdm({ dados }: Props) {
         <h1 className="painel-estat-titulo">Visão geral</h1>
         <Texto>
           <N>{e.ativas}</N> empresas ativas · <N>{u.ativos}</N> usuários ativos · <N>{d.ativos}</N> documentos
-          · <N>{formatarBytes(e.armazenamentoUsado)}</N> em uso ({pctArmazenamento}% do limite) ·{' '}
+          · VIGMED <N>{formatarBytes(e.armazenamentoVigmed)}</N> (ilimitado) · empresas{' '}
+          <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
+          <N>{formatarBytes(e.armazenamentoLimite)}</N> ({pctArmazenamento}% da cota) ·{' '}
           <N>{a.eventos24h}</N> eventos nas últimas 24 h
         </Texto>
       </header>
@@ -99,15 +103,19 @@ export function PainelEstatisticasAdm({ dados }: Props) {
             </Texto>
             <Ascii conteudo={blocoBarras(empresasItens)} />
             <Texto>
-              Armazenamento <N>{formatarBytes(e.armazenamentoUsado)}</N> de{' '}
-              <N>{formatarBytes(e.armazenamentoLimite)}</N>, média <N>{formatarBytes(e.mediaArmazenamento)}</N> por
-              empresa
+              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N> — sem limite · Cota empresas{' '}
+              <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
+              <N>{formatarBytes(e.armazenamentoLimite)}</N>, média{' '}
+              <N>{formatarBytes(e.mediaArmazenamento)}</N> por empresa
               {e.maiorConsumo ? (
                 <>
                   {' '}
-                  · maior consumo <N>{e.maiorConsumo.nome}</N> ({formatarBytes(e.maiorConsumo.bytes)})
+                  · maior uso de cota <N>{e.maiorConsumo.nome}</N> ({formatarBytes(e.maiorConsumo.bytes)})
                 </>
               ) : null}
+            </Texto>
+            <Texto>
+              Total na plataforma <N>{formatarBytes(e.armazenamentoUsado)}</N> (VIGMED + empresas)
             </Texto>
             <Ascii conteudo={barraProgresso(pctArmazenamento)} />
           </Secao>

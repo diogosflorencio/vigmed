@@ -156,6 +156,8 @@ export interface EstatisticasPainelAdmin {
     total: number
     armazenamentoUsado: number
     armazenamentoLimite: number
+    armazenamentoVigmed: number
+    armazenamentoEmpresas: number
     mediaArmazenamento: number
     maiorConsumo: { nome: string; bytes: number } | null
   }

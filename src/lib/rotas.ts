@@ -9,6 +9,9 @@ export const ROTAS = {
     home: '/blog',
     post: (slug: string) => `/blog/${slug}`,
   },
+  doc: {
+    arquivo: (id: string) => `/doc/${id}`,
+  },
   auth: {
     entrar: '/entrar',
     cadastro: '/cadastro',

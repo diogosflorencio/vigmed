@@ -1,5 +1,6 @@
 'use server'
 
+import { obterConsumoPorEmpresas, obterTotaisArmazenamento } from '@/lib/documentos/armazenamento'
 import { criarClienteSupabaseAdmin } from '@/lib/supabase/admin'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
 import { obterPerfilAtual } from '@/lib/auth/sessao'
@@ -28,7 +29,7 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     { count: empresasInativas },
     { count: empresasSuspensas },
     { data: empresasArmazenamento },
-    { data: maiorEmpresa },
+    { data: empresasNomes },
     { count: usuariosAtivos },
     { count: usuariosInativos },
     { count: administradores },
@@ -63,8 +64,8 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     supabase.from('empresas').select('*', { count: 'exact', head: true }).eq('status', 'ativo'),
     supabase.from('empresas').select('*', { count: 'exact', head: true }).eq('status', 'inativo'),
     supabase.from('empresas').select('*', { count: 'exact', head: true }).eq('status', 'suspenso'),
-    supabase.from('empresas').select('armazenamento_usado, armazenamento_limite'),
-    supabase.from('empresas').select('nome_fantasia, armazenamento_usado').order('armazenamento_usado', { ascending: false }).limit(1),
+    supabase.from('empresas').select('armazenamento_limite'),
+    supabase.from('empresas').select('id, nome_fantasia'),
     supabase.from('perfis').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('perfis').select('*', { count: 'exact', head: true }).eq('ativo', false),
     supabase.from('perfis').select('*', { count: 'exact', head: true }).eq('papel', 'administrador').eq('ativo', true),
@@ -97,12 +98,22 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     supabase.from('auditoria').select('*', { count: 'exact', head: true }).eq('acao', 'download').gte('criado_em', desde7d),
   ])
 
-  const armazenamentoUsado = empresasArmazenamento?.reduce((acc, e) => acc + (e.armazenamento_usado ?? 0), 0) ?? 0
-  const armazenamentoLimite = empresasArmazenamento?.reduce((acc, e) => acc + (e.armazenamento_limite ?? 0), 0) ?? 0
+  const totaisArmazenamento = await obterTotaisArmazenamento()
+  const consumoMap = await obterConsumoPorEmpresas(empresasNomes?.map((e) => e.id))
+
+  let maiorConsumo: { nome: string; bytes: number } | null = null
+  for (const emp of empresasNomes ?? []) {
+    const consumo = consumoMap.get(emp.id)?.empresa ?? 0
+    if (!maiorConsumo || consumo > maiorConsumo.bytes) {
+      maiorConsumo = { nome: emp.nome_fantasia, bytes: consumo }
+    }
+  }
+
+  const armazenamentoLimite =
+    empresasArmazenamento?.reduce((acc, e) => acc + (e.armazenamento_limite ?? 0), 0) ?? 0
   const totalEmpresas = (empresasAtivas ?? 0) + (empresasInativas ?? 0) + (empresasSuspensas ?? 0)
   const somaTamanho = documentosMetricas?.reduce((acc, d) => acc + (d.tamanho_arquivo ?? 0), 0) ?? 0
   const somaDownloads = documentosMetricas?.reduce((acc, d) => acc + (d.total_downloads ?? 0), 0) ?? 0
-  const top = maiorEmpresa?.[0]
 
   return {
     empresas: {
@@ -110,12 +121,12 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
       inativas: empresasInativas ?? 0,
       suspensas: empresasSuspensas ?? 0,
       total: totalEmpresas,
-      armazenamentoUsado,
+      armazenamentoUsado: totaisArmazenamento.total,
       armazenamentoLimite,
-      mediaArmazenamento: totalEmpresas > 0 ? Math.round(armazenamentoUsado / totalEmpresas) : 0,
-      maiorConsumo: top
-        ? { nome: top.nome_fantasia, bytes: top.armazenamento_usado ?? 0 }
-        : null,
+      armazenamentoVigmed: totaisArmazenamento.vigmed,
+      armazenamentoEmpresas: totaisArmazenamento.empresa,
+      mediaArmazenamento: totalEmpresas > 0 ? Math.round(totaisArmazenamento.empresa / totalEmpresas) : 0,
+      maiorConsumo,
     },
     usuarios: {
       ativos: usuariosAtivos ?? 0,

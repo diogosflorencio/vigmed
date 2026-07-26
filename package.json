@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "supabase:login": "npx supabase login",
     "db:types": "npx supabase gen types typescript --project-id zztqshnznzszllrooljn > src/types/database.ts",
-    "r2:test": "node scripts/testar-r2.mjs"
+    "r2:test": "node scripts/testar-r2.mjs",
+    "r2:cors": "node scripts/configurar-cors-r2.mjs"
   },
   "dependencies": {
     "@animateicons/react": "^0.3.4",

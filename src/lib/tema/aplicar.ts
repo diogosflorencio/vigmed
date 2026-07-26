@@ -29,16 +29,8 @@ export function aplicarPreferencias({ modo, temaVisual }: PreferenciasAparencia)
 export function lerPreferenciasLocais(): PreferenciasAparencia {
   if (typeof window === 'undefined') return PREFERENCIAS_PADRAO
 
-  const legado = localStorage.getItem('fds-theme')
-  if (legado && !localStorage.getItem(CHAVE_MODO)) {
-    localStorage.setItem(CHAVE_MODO, legado)
-    localStorage.removeItem('fds-theme')
-  }
-
   const modoSalvo = localStorage.getItem(CHAVE_MODO) as ModoTema | null
-  const temaSalvo =
-    localStorage.getItem(CHAVE_TEMA_VISUAL) ??
-    localStorage.getItem('vigmed-paleta')
+  const temaSalvo = localStorage.getItem(CHAVE_TEMA_VISUAL)
 
   return {
     modo: modoSalvo === 'light' || modoSalvo === 'dark' || modoSalvo === 'system' ? modoSalvo : PREFERENCIAS_PADRAO.modo,
@@ -49,7 +41,6 @@ export function lerPreferenciasLocais(): PreferenciasAparencia {
 export function salvarPreferenciasLocais(prefs: PreferenciasAparencia) {
   localStorage.setItem(CHAVE_MODO, prefs.modo)
   localStorage.setItem(CHAVE_TEMA_VISUAL, prefs.temaVisual)
-  localStorage.removeItem('vigmed-paleta')
   aplicarPreferencias(prefs)
 }
 
@@ -57,7 +48,7 @@ export function preferenciasDoPerfil(metadados: Record<string, unknown> | undefi
   if (!metadados?.aparencia || typeof metadados.aparencia !== 'object') return null
   const a = metadados.aparencia as Record<string, unknown>
   const modo = a.modo as ModoTema | undefined
-  const temaRaw = (a.temaVisual ?? a.paleta) as string | undefined
+  const temaRaw = a.temaVisual as string | undefined
   if (!modo && !temaRaw) return null
   return {
     modo: modo === 'light' || modo === 'dark' || modo === 'system' ? modo : PREFERENCIAS_PADRAO.modo,
