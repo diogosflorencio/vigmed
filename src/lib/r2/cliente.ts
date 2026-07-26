@@ -90,15 +90,12 @@ export async function excluirArquivoR2(chaveArquivo: string) {
 
 /**
  * Monta a chave única do arquivo no bucket.
- * Formato: empresas/{empresaId}/documentos/{documentoId}/{nomeSanitizado}
+ * Um arquivo físico por documento; empresas acessam via documento_empresas.
+ * Formato: documentos/{documentoId}/{nomeSanitizado}
  */
-export function montarChaveArquivo(
-  empresaId: string,
-  documentoId: string,
-  nomeArquivo: string,
-): string {
+export function montarChaveArquivo(documentoId: string, nomeArquivo: string): string {
   const nomeSanitizado = nomeArquivo.replace(/[^a-zA-Z0-9._-]/g, '_')
-  return `empresas/${empresaId}/documentos/${documentoId}/${nomeSanitizado}`
+  return `documentos/${documentoId}/${nomeSanitizado}`
 }
 
 /** Chave de imagem do blog no R2 */

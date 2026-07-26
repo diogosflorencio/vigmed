@@ -43,7 +43,7 @@ export async function POST(requisicao: Request) {
       return NextResponse.json({ erro: 'Sem permissão.' }, { status: 403 })
     }
 
-    const empresaPrincipal = idsEmpresas[0]
+    const chaveArquivo = montarChaveArquivo(documentoId, nomeArquivo)
     const supabase = await criarClienteSupabaseServidor()
     const tamanhoArquivo = tamanho ?? 0
     const origem = origemPublicacaoDocumento(perfil)
@@ -71,8 +71,6 @@ export async function POST(requisicao: Request) {
         }
       }
     }
-
-    const chaveArquivo = montarChaveArquivo(empresaPrincipal, documentoId, nomeArquivo)
 
     const { error: erroInsert } = await supabase.from('documentos').insert({
       id: documentoId,
