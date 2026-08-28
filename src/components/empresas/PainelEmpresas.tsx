@@ -8,7 +8,11 @@ import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { Badge, Button, Input } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { Campo } from '@/components/vig/Campo'
+import { Metrica } from '@/components/vig/Metrica'
+import { Selo, seloDeVarianteShadcn } from '@/components/vig/Selo'
+import { IconeAnimado } from '@/components/ui/icone-animado'
 import { salvarEmpresa } from '@/lib/empresas/acoes'
 import { hrefPublico, ROTAS } from '@/lib/rotas'
 import type { ConsumoArmazenamentoEmpresa, TotaisArmazenamentoPlataforma } from '@/lib/documentos/armazenamento'
@@ -91,22 +95,31 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
   return (
     <SecaoPainel>
       <CabecalhoPagina
+        hero
+        rotulo="Administração"
         titulo="Empresas"
-        descricao="Clientes e consumo de armazenamento."
+        descricao="Clientes cadastrados e consumo de armazenamento na plataforma."
+        icone={<IconeAnimado nome="building" tamanho={28} />}
         acoes={
           criando ? (
-            <Button variant="ghost" size="sm" onClick={fecharNova}>
-              <X size={15} />
-              Fechar
-            </Button>
+            <Botao variante="fantasma" tamanho="sm" onClick={fecharNova} icone={<X size={15} />} filho="Fechar" />
           ) : (
-            <Button variant="primary" size="sm" onClick={abrirNova}>
-              <Plus size={15} />
-              Nova empresa
-            </Button>
+            <Botao variante="teal" tamanho="sm" onClick={abrirNova} icone={<Plus size={15} />} filho="Nova empresa" />
           )
         }
       />
+
+      <RevelarScroll atraso={0.03}>
+        <div className="vig-metrica-grid vig-metrica-grid--3">
+          <Metrica rotulo="Empresas listadas" valor={empresas.length} icone={<IconeAnimado nome="building" tamanho={16} />} />
+          <Metrica rotulo="Ativas" valor={empresasIniciais.filter((e) => e.status === 'ativo').length} destaque icone={<IconeAnimado nome="check-circle" tamanho={16} />} />
+          <Metrica
+            rotulo="Armazenamento total"
+            valor={formatarBytes(totaisArmazenamento.total)}
+            icone={<IconeAnimado nome="hard-drive" tamanho={16} />}
+          />
+        </div>
+      </RevelarScroll>
 
       {criando && (
         <RevelarScroll>
@@ -117,78 +130,21 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Input
-                label="Razão social"
-                value={form.razaoSocial}
-                onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })}
-                placeholder="Razão social Ltda"
-                required
-              />
-              <Input
-                label="Nome fantasia"
-                value={form.nomeFantasia}
-                onChange={(e) => definirForm({ ...form, nomeFantasia: e.target.value })}
-                placeholder="Nome comercial"
-                required
-              />
-              <Input
-                label="CNPJ"
-                value={form.cnpj}
-                onChange={(e) => definirForm({ ...form, cnpj: e.target.value })}
-                placeholder="00.000.000/0000-00"
-                required
-              />
-              <Input
-                label="E-mail"
-                type="email"
-                value={form.email}
-                onChange={(e) => definirForm({ ...form, email: e.target.value })}
-                placeholder="contato@empresa.com"
-              />
-              <Input
-                label="Telefone"
-                value={form.telefone}
-                onChange={(e) => definirForm({ ...form, telefone: e.target.value })}
-                placeholder="(00) 00000-0000"
-              />
-              <Input
-                label="Responsável"
-                value={form.responsavel}
-                onChange={(e) => definirForm({ ...form, responsavel: e.target.value })}
-                placeholder="Nome do responsável"
-              />
+              <Campo rotulo="Razão social" value={form.razaoSocial} onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })} placeholder="Razão social Ltda" required />
+              <Campo rotulo="Nome fantasia" value={form.nomeFantasia} onChange={(e) => definirForm({ ...form, nomeFantasia: e.target.value })} placeholder="Nome comercial" required />
+              <Campo rotulo="CNPJ" value={form.cnpj} onChange={(e) => definirForm({ ...form, cnpj: e.target.value })} placeholder="00.000.000/0000-00" required />
+              <Campo rotulo="E-mail" type="email" value={form.email} onChange={(e) => definirForm({ ...form, email: e.target.value })} placeholder="contato@empresa.com" />
+              <Campo rotulo="Telefone" value={form.telefone} onChange={(e) => definirForm({ ...form, telefone: e.target.value })} placeholder="(00) 00000-0000" />
+              <Campo rotulo="Responsável" value={form.responsavel} onChange={(e) => definirForm({ ...form, responsavel: e.target.value })} placeholder="Nome do responsável" />
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={fecharNova} disabled={pendente}>
-                Cancelar
-              </Button>
-              <Button type="submit" variant="primary" size="sm" loading={pendente}>
-                <Plus size={14} />
-                Criar empresa
-              </Button>
+              <Botao type="button" variante="secundario" tamanho="sm" onClick={fecharNova} disabled={pendente} filho="Cancelar" />
+              <Botao type="submit" variante="primario" tamanho="sm" disabled={pendente} icone={<Plus size={14} />} filho="Criar empresa" />
             </div>
           </form>
         </RevelarScroll>
       )}
-
-      <RevelarScroll>
-        <div className="grid gap-3 sm:grid-cols-3 mb-4">
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">VIGMED (admin)</p>
-            <p className="mt-1 text-lg font-semibold">{formatarBytes(totaisArmazenamento.vigmed)}</p>
-          </div>
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">Cota empresas</p>
-            <p className="mt-1 text-lg font-semibold">{formatarBytes(totaisArmazenamento.empresa)}</p>
-            <p className="text-xs text-(--color-text-3)">de {formatarBytes(totaisArmazenamento.limiteEmpresas)}</p>
-          </div>
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3) uppercase tracking-wide">Total</p>
-            <p className="mt-1 text-lg font-semibold">{formatarBytes(totaisArmazenamento.total)}</p>
-          </div>
-        </div>
-      </RevelarScroll>
 
       <RevelarScroll>
         <div className="painel-filtros">
@@ -258,7 +214,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
                           <span className="tabela-sub">{formatarCnpj(empresa.cnpj)}</span>
                         </td>
                         <td>
-                          <Badge variant={status.variant} className="text-[10px] py-0">{status.rotulo}</Badge>
+                          <Selo variante={seloDeVarianteShadcn(status.variant)}>{status.rotulo}</Selo>
                         </td>
                         <td className="text-right">
                           <span className="tabela-mono text-xs">{formatarBytes(consumo.total)}</span>
@@ -306,12 +262,8 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
                                 <p className="tabela-mono">{formatarBytes(consumo.empresa)} / {formatarBytes(empresa.armazenamento_limite)}</p>
                               </div>
                               <div className="sm:col-span-2 flex flex-wrap gap-2 items-end">
-                                <Button variant="outline" size="sm" render={<Link href={hrefPublico(ROTAS.adm.empresa(empresa.id))} />}>
-                                  Gerenciar
-                                </Button>
-                                <Button variant="ghost" size="sm" render={<Link href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))} />}>
-                                  Documentos
-                                </Button>
+                                <Botao href={hrefPublico(ROTAS.adm.empresa(empresa.id))} variante="secundario" tamanho="sm" filho="Gerenciar" />
+                                <Botao href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))} variante="fantasma" tamanho="sm" filho="Documentos" />
                               </div>
                             </div>
                           </td>

@@ -2,14 +2,18 @@
 
 import { redirect } from 'next/navigation'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
-import { registrarAuditoria } from '@/lib/auth/sessao'
+import { registrarAuditoria, exigirAutenticacao } from '@/lib/auth/sessao'
 import { normalizarEmail, validarConviteParaCadastro } from '@/lib/auth/convites'
 import { validarPerfilAposAutenticacao } from '@/lib/auth/perfil-servidor'
-import { urlBaseAuthDaRequisicao, urlPainelAposLogin } from '@/lib/auth/redirecionamento'
+import { urlBaseAuthDaRequisicao, urlPainelAposLogin, resolverDestinoPosLogin } from '@/lib/auth/redirecionamento'
 import { ROTAS } from '@/lib/rotas'
 
 /** Login com e-mail e senha; redireciona ao painel conforme o papel */
-export async function entrarComEmail(email: string, senha: string) {
+export async function entrarComEmail(
+  email: string,
+  senha: string,
+  opcoes?: { redirect?: string; ambiente?: string },
+) {
   const supabase = await criarClienteSupabaseServidor()
   const emailNormalizado = normalizarEmail(email)
 
@@ -44,7 +48,9 @@ export async function entrarComEmail(email: string, senha: string) {
   })
 
   const urlBase = await urlBaseAuthDaRequisicao()
-  redirect(urlPainelAposLogin(validacao.perfil.papel, urlBase))
+  redirect(
+    resolverDestinoPosLogin(validacao.perfil.papel, urlBase, opcoes?.redirect, opcoes?.ambiente),
+  )
 }
 
 /** Cadastro com convite pré-autorizado; cria conta confirmada e já autentica */
@@ -156,4 +162,32 @@ export async function solicitarRedefinicaoSenha(email: string) {
   }
 
   return { sucesso: true, mensagem: 'Se o e-mail estiver cadastrado, você receberá as instruções.' }
+}
+
+/** Define nova senha após link de recuperação ou troca voluntária no perfil */
+export async function redefinirSenha(novaSenha: string, confirmarSenha: string) {
+  const perfil = await exigirAutenticacao()
+
+  if (novaSenha.length < 8) {
+    return { erro: 'Use pelo menos 8 caracteres.' }
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    return { erro: 'As senhas não coincidem.' }
+  }
+
+  const supabase = await criarClienteSupabaseServidor()
+  const { error } = await supabase.auth.updateUser({ password: novaSenha })
+
+  if (error) {
+    return { erro: 'Não foi possível alterar a senha. Solicite um novo link de recuperação.' }
+  }
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    detalhes: { tipo: 'senha' },
+  })
+
+  return { sucesso: true }
 }

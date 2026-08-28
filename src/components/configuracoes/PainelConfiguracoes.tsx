@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel, CartaoPainel } from '@/components/layout/SecaoPainel'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Textarea, CheckboxInline } from '@/components/ui'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
 import {
   salvarConfiguracoesSistema,
@@ -151,26 +151,20 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
             hint={legendaUpload}
           />
 
-          <div className="painel-campo">
-            <label className="painel-label">Extensões permitidas</label>
-            <textarea
-              className="painel-textarea"
-              rows={3}
-              value={extensoes}
-              onChange={(e) => definirExtensoes(e.target.value)}
-              placeholder="pdf, docx, xlsx, png..."
-            />
-            <p className="text-xs text-(--color-text-3) mt-1.5">
-              Separe por vírgula. Sem ponto (use <code>pdf</code>, não <code>.pdf</code>).
-              Só esses tipos podem ser enviados.
-            </p>
-          </div>
+          <Textarea
+            label="Extensões permitidas"
+            rows={3}
+            value={extensoes}
+            onChange={(e) => definirExtensoes(e.target.value)}
+            placeholder="pdf, docx, xlsx, png..."
+            hint="Separe por vírgula. Sem ponto (use pdf, não .pdf). Só esses tipos podem ser enviados."
+          />
         </div>
       </CartaoPainel>
 
       <CartaoPainel
         titulo="Retenção de documentos"
-        descricao="Política de tempo de vida dos arquivos na plataforma. Exclusão automática pode ser ligada depois sem mudar este campo. Não foi feito o teste ainda."
+        descricao="Prazo de guarda configurável. A exclusão automática por prazo ainda não está ativa; o valor fica registrado para uso futuro."
       >
         <div className="max-w-lg">
           <Input
@@ -187,25 +181,15 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
 
       <CartaoPainel
         titulo="Comunicados"
-        descricao="Comportamento de avisos enviados às empresas."
+        descricao="Avisos enviados às empresas pelo portal Docs."
       >
-        <label className="flex items-start gap-3 cursor-pointer max-w-xl">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={emailAuto}
-            onChange={(e) => definirEmailAuto(e.target.checked)}
-          />
-          <span>
-            <span className="block text-sm font-medium text-(--color-text-1)">
-              E-mail automático ao publicar comunicado
-            </span>
-            <span className="block text-xs text-(--color-text-3) mt-0.5">
-              Se ativo, a plataforma pode disparar e-mail para usuários das empresas destinatárias
-              quando um comunicado for publicado. Se desligado, o aviso aparece só no portal Docs. Mas não recomendo usar, porque o SMTP do db é muito limitado.
-            </span>
-          </span>
-        </label>
+        <CheckboxInline
+          rotulo="E-mail automático ao publicar comunicado"
+          descricao="Quando ativo, envia e-mail às empresas ao publicar. Requer SMTP configurado no servidor."
+          checked={emailAuto}
+          onChange={(e) => definirEmailAuto(e.target.checked)}
+          className="max-w-xl"
+        />
       </CartaoPainel>
     </SecaoPainel>
   )

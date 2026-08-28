@@ -197,6 +197,25 @@ export const ATUALIZACOES_VIGMED: RegistroAtualizacao[] = [
       'Cota visível no seletor de upload e empresas expansíveis na lista',
     ],
   },
+  {
+    versao: '1.3.0',
+    data: '27 ago 2026',
+    itens: [
+      'Identidade visual VIGMED: componentes vig (Botao, Campo, Modal, Selo, Cartao, FlipBox) e vig.css',
+      'Camada ui/index compatível com painéis legados (Button, Input, Badge → vig)',
+      'Menu configurável: dock, barra lateral ou superior (preferência no perfil)',
+      'Tema vigmed como padrão; seletor de layout com mini-preview',
+      'Landing institucional redesenhada (hero, serviços, FAQ, mockup painel)',
+      'Auth split-screen com marca VIGMED; formulários migrados para vig',
+      'Painéis internos padronizados: documentos, comunicados, empresas, estatísticas, perfil',
+      'Login honra ?redirect= após sessão expirada em rota protegida',
+      'Recuperação de senha completa: formulário no perfil após link do e-mail',
+      'Blog habilitado no menu admin e criação de posts; página pública revisada',
+      'Modal VIG no detalhe de documentos e confirmações; selects e inputs unificados',
+      'Textos revisados (menos genéricos); removida foto stock do hero',
+      'Removido PainelChatEmpresas (substituído por PainelMensagens)',
+    ],
+  },
 ]
 
 export const VERSAO_ATUAL = ATUALIZACOES_VIGMED[ATUALIZACOES_VIGMED.length - 1].versao

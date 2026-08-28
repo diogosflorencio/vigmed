@@ -1,16 +1,17 @@
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
+import { Cartao } from '@/components/vig/Cartao'
 
 interface PropsSecaoPainel {
   children: ReactNode
   className?: string
 }
 
-/** Container padrão de conteúdo - título fica no CabecalhoPainel */
+/** Container padrão de conteúdo do painel */
 export function SecaoPainel({ children, className }: PropsSecaoPainel) {
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    <div className={cn('vig-secao-painel flex flex-col gap-4', className)}>
       {children}
     </div>
   )
@@ -22,20 +23,22 @@ interface PropsCartaoPainel {
   titulo?: string
   descricao?: string
   animar?: boolean
+  destaque?: boolean
 }
 
-/** Cartão de seção com estilo unificado */
-export function CartaoPainel({ children, className, titulo, descricao, animar = true }: PropsCartaoPainel) {
+/** Cartão de seção, delega ao componente VIGMED */
+export function CartaoPainel({
+  children,
+  className,
+  titulo,
+  descricao,
+  animar = true,
+  destaque,
+}: PropsCartaoPainel) {
   const conteudo = (
-    <section className={cn('bloco-painel', className)}>
-      {(titulo || descricao) && (
-        <header className="bloco-painel-cabecalho">
-          {titulo && <h2 className="bloco-painel-titulo">{titulo}</h2>}
-          {descricao && <p className="bloco-painel-descricao">{descricao}</p>}
-        </header>
-      )}
+    <Cartao titulo={titulo} descricao={descricao} className={className} destaque={destaque}>
       {children}
-    </section>
+    </Cartao>
   )
 
   if (!animar) return conteudo

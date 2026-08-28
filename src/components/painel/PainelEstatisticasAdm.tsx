@@ -1,192 +1,113 @@
-import type { ReactNode } from 'react'
 import type { EstatisticasPainelAdmin } from '@/types'
+import { RevelarScroll } from '@/components/ui/revelar-scroll'
+import { IconeAnimado } from '@/components/ui/icone-animado'
+import { Cartao } from '@/components/vig/Cartao'
+import { Metrica } from '@/components/vig/Metrica'
 import { formatarBytes } from '@/lib/utils'
-import { barraProgresso, blocoBarras } from '@/lib/painel/graficos-texto'
 
 interface Props {
   dados: EstatisticasPainelAdmin
 }
 
-function N({ children }: { children: ReactNode }) {
-  return <strong className="painel-estat-num">{children}</strong>
-}
-
-function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
+function BarraProgresso({ pct }: { pct: number }) {
   return (
-    <section className="painel-estat-secao">
-      <h2 className="painel-estat-secao-titulo">{titulo}</h2>
-      {children}
-    </section>
+    <div className="vig-barra-progresso" aria-hidden>
+      <div className="vig-barra-progresso-fill" style={{ width: `${Math.min(100, pct)}%` }} />
+    </div>
   )
 }
 
-function Texto({ children }: { children: ReactNode }) {
-  return <p className="painel-estat-texto">{children}</p>
-}
-
-function Ascii({ conteudo }: { conteudo: string }) {
-  if (!conteudo) return null
-  return <pre className="painel-estat-ascii" aria-hidden>{conteudo}</pre>
-}
-
-/** Estatísticas em texto + gráficos construídos com caracteres */
+/** Dashboard admin visual com métricas e cartões VIGMED */
 export function PainelEstatisticasAdm({ dados }: Props) {
-  const { empresas: e, usuarios: u, documentos: d, comunicados: c, mensagens: m, blog: b, convites: v, auditoria: a } =
-    dados
+  const { empresas: e, usuarios: u, documentos: d, comunicados: c, mensagens: m, convites: v, auditoria: a } = dados
 
   const pctArmazenamento =
-    e.armazenamentoLimite > 0
-      ? Math.round((e.armazenamentoEmpresas / e.armazenamentoLimite) * 100)
-      : 0
-
-  const empresasItens = [
-    { nome: 'Ativas', valor: e.ativas },
-    { nome: 'Inativas', valor: e.inativas },
-    { nome: 'Suspensas', valor: e.suspensas },
-  ]
-
-  const usuariosItens = [
-    { nome: 'Admin sistema', valor: u.administradores },
-    { nome: 'Admin empresa', valor: u.administradoresEmpresa },
-    { nome: 'Usu. empresa', valor: u.usuariosEmpresa },
-  ]
-  const totalUsuariosPorPapel = u.administradores + u.administradoresEmpresa + u.usuariosEmpresa
-
-  const documentosItens = [
-    { nome: 'Criados 7d', valor: d.criados7d },
-    { nome: 'Criados 30d', valor: d.criados30d },
-    { nome: 'Uploads 7d', valor: d.uploads7d },
-    { nome: 'Downloads 7d', valor: d.downloads7d },
-  ]
-
-  const auditoriaItens = [
-    { nome: 'Logins', valor: a.logins7d },
-    { nome: 'Envios', valor: a.envios7d },
-    { nome: 'Downloads', valor: a.downloads7d },
-    { nome: 'Eventos', valor: a.eventos7d },
-  ]
-
-  const blogItens = [
-    { nome: 'Publicados', valor: b.publicados },
-    { nome: 'Rascunhos', valor: b.rascunhos },
-    { nome: 'Arquivados', valor: b.arquivados },
-  ]
-  const totalPostsBlog = b.publicados + b.rascunhos + b.arquivados
-
-  const engajamentoItens = [
-    { nome: 'Comunicados', valor: c.ativos },
-    { nome: 'Leituras', valor: c.leituras },
-    { nome: 'Mensagens 7d', valor: m.mensagens7d },
-    { nome: 'Views blog 7d', valor: b.visualizacoes7d },
-  ]
-
-  const convitesItens = [
-    { nome: 'Pendentes', valor: v.pendentes },
-    { nome: 'Aceitos 30d', valor: v.aceitos30d },
-  ]
+    e.armazenamentoLimite > 0 ? Math.round((e.armazenamentoEmpresas / e.armazenamentoLimite) * 100) : 0
 
   return (
-    <article className="painel-estatisticas" aria-label="Estatísticas da plataforma">
-      <header className="painel-estat-topo">
-        <h1 className="painel-estat-titulo">Visão geral</h1>
-        <Texto>
-          <N>{e.ativas}</N> empresas ativas · <N>{u.ativos}</N> usuários ativos · <N>{d.ativos}</N> documentos
-          · VIGMED <N>{formatarBytes(e.armazenamentoVigmed)}</N> (ilimitado) · empresas{' '}
-          <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
-          <N>{formatarBytes(e.armazenamentoLimite)}</N> ({pctArmazenamento}% da cota) ·{' '}
-          <N>{a.eventos24h}</N> eventos nas últimas 24 h
-        </Texto>
-      </header>
-
-      <div className="painel-estat-grid">
-        <div className="painel-estat-col">
-          <Secao titulo="Empresas">
-            <Texto>
-              <N>{e.ativas}</N> ativas · <N>{e.inativas}</N> inativas · <N>{e.suspensas}</N> suspensas ·{' '}
-              <N>{e.total}</N> cadastradas
-            </Texto>
-            <Ascii conteudo={blocoBarras(empresasItens, { total: e.total, modo: 'parte' })} />
-            <Texto>
-              VIGMED (admin) <N>{formatarBytes(e.armazenamentoVigmed)}</N>, sem limite · Cota empresas{' '}
-              <N>{formatarBytes(e.armazenamentoEmpresas)}</N> de{' '}
-              <N>{formatarBytes(e.armazenamentoLimite)}</N>, média{' '}
-              <N>{formatarBytes(e.mediaArmazenamento)}</N> por empresa
-              {e.maiorConsumo ? (
-                <>
-                  {' '}
-                  · maior uso de cota <N>{e.maiorConsumo.nome}</N> ({formatarBytes(e.maiorConsumo.bytes)})
-                </>
-              ) : null}
-            </Texto>
-            <Texto>
-              Total na plataforma <N>{formatarBytes(e.armazenamentoUsado)}</N> (VIGMED + empresas)
-            </Texto>
-            <Ascii conteudo={barraProgresso(pctArmazenamento)} />
-          </Secao>
-
-          <Secao titulo="Usuários">
-            <Texto>
-              <N>{u.ativos}</N> ativos · <N>{u.inativos}</N> inativos · <N>{u.loginsRecentes}</N> com login nos
-              últimos 7 dias
-            </Texto>
-            <Ascii
-              conteudo={blocoBarras(usuariosItens, {
-                total: totalUsuariosPorPapel,
-                modo: 'parte',
-              })}
-            />
-          </Secao>
-
-          <Secao titulo="Documentos">
-            <Texto>
-              <N>{d.ativos}</N> ativos de <N>{d.total}</N> no total · <N>{d.categorias}</N> categorias · volume{' '}
-              <N>{formatarBytes(d.somaTamanho)}</N> · <N>{d.somaDownloads}</N> downloads acumulados
-            </Texto>
-            <Ascii conteudo={blocoBarras(documentosItens, { modo: 'comparativo' })} />
-          </Secao>
-
-          <Secao titulo="Blog (ainda não há)">
-            <Texto>
-              <N>{b.publicados}</N> publicados · <N>{b.rascunhos}</N> rascunhos · <N>{b.arquivados}</N> arquivados ·{' '}
-              <N>{b.visualizacoes7d}</N> visualizações nos últimos 7 dias
-            </Texto>
-            <Ascii
-              conteudo={blocoBarras(blogItens, {
-                total: totalPostsBlog,
-                modo: 'parte',
-              })}
-            />
-          </Secao>
+    <div className="vig-dashboard-adm">
+      <RevelarScroll atraso={0.04}>
+        <div className="vig-metrica-grid vig-metrica-grid--4">
+          <Metrica rotulo="Empresas ativas" valor={e.ativas} icone={<IconeAnimado nome="building" tamanho={16} />} destaque />
+          <Metrica rotulo="Usuários ativos" valor={u.ativos} icone={<IconeAnimado nome="users" tamanho={16} />} />
+          <Metrica rotulo="Documentos ativos" valor={d.ativos} icone={<IconeAnimado nome="file-text" tamanho={16} />} />
+          <Metrica rotulo="Eventos (24h)" valor={a.eventos24h} icone={<IconeAnimado nome="activity" tamanho={16} />} />
         </div>
+      </RevelarScroll>
 
-        <div className="painel-estat-col">
-          <Secao titulo="Comunicados e mensagens">
-            <Texto>
-              <N>{c.ativos}</N> comunicados ativos de <N>{c.total}</N> publicados · <N>{c.fixados}</N> fixados ·{' '}
-              <N>{c.leituras}</N> leituras confirmadas
-            </Texto>
-            <Texto>
-              <N>{m.conversasAtivas}</N> conversas ativas · <N>{m.totalMensagens}</N> mensagens no total ·{' '}
-              <N>{m.mensagens7d}</N> mensagens nos últimos 7 dias
-            </Texto>
-            <Ascii conteudo={blocoBarras(engajamentoItens, { modo: 'comparativo' })} />
-          </Secao>
+      <div className="vig-dashboard-adm-grid">
+        <RevelarScroll atraso={0.06}>
+          <Cartao titulo="Empresas" descricao="Status e armazenamento">
+            <div className="vig-metrica-grid vig-metrica-grid--3 vig-metrica-grid--inline">
+              <Metrica rotulo="Ativas" valor={e.ativas} />
+              <Metrica rotulo="Inativas" valor={e.inativas} />
+              <Metrica rotulo="Suspensas" valor={e.suspensas} />
+            </div>
+            <div className="vig-dashboard-detalhe">
+              <p>
+                Cota empresas: <strong>{formatarBytes(e.armazenamentoEmpresas)}</strong> de{' '}
+                <strong>{formatarBytes(e.armazenamentoLimite)}</strong> ({pctArmazenamento}%)
+              </p>
+              <BarraProgresso pct={pctArmazenamento} />
+              <p className="vig-dashboard-detalhe-sub">
+                VIGMED {formatarBytes(e.armazenamentoVigmed)} · Total {formatarBytes(e.armazenamentoUsado)}
+              </p>
+            </div>
+          </Cartao>
+        </RevelarScroll>
 
-          <Secao titulo="Convites">
-            <Texto>
-              <N>{v.pendentes}</N> convites pendentes · <N>{v.aceitos30d}</N> aceitos nos últimos 30 dias
-            </Texto>
-            <Ascii conteudo={blocoBarras(convitesItens, { modo: 'comparativo' })} />
-          </Secao>
+        <RevelarScroll atraso={0.08}>
+          <Cartao titulo="Usuários" descricao="Perfis e acessos recentes">
+            <div className="vig-metrica-grid vig-metrica-grid--3 vig-metrica-grid--inline">
+              <Metrica rotulo="Admin sistema" valor={u.administradores} />
+              <Metrica rotulo="Admin empresa" valor={u.administradoresEmpresa} />
+              <Metrica rotulo="Usu. empresa" valor={u.usuariosEmpresa} />
+            </div>
+            <p className="vig-dashboard-detalhe-sub">
+              {u.loginsRecentes} logins nos últimos 7 dias · {u.inativos} inativos
+            </p>
+          </Cartao>
+        </RevelarScroll>
 
-          <Secao titulo="Auditoria (7 dias)">
-            <Texto>
-              <N>{a.eventos24h}</N> eventos nas últimas 24 h · <N>{a.eventos7d}</N> em 7 dias
-            </Texto>
-            <Ascii conteudo={blocoBarras(auditoriaItens, { modo: 'comparativo' })} />
-          </Secao>
-        </div>
+        <RevelarScroll atraso={0.1}>
+          <Cartao titulo="Documentos" descricao="Volume e atividade recente">
+            <div className="vig-metrica-grid vig-metrica-grid--2 vig-metrica-grid--inline">
+              <Metrica rotulo="Criados 7d" valor={d.criados7d} />
+              <Metrica rotulo="Uploads 7d" valor={d.uploads7d} />
+              <Metrica rotulo="Downloads 7d" valor={d.downloads7d} />
+              <Metrica rotulo="Downloads total" valor={d.somaDownloads} />
+            </div>
+            <p className="vig-dashboard-detalhe-sub">
+              {d.categorias} categorias · {formatarBytes(d.somaTamanho)} armazenados
+            </p>
+          </Cartao>
+        </RevelarScroll>
+
+        <RevelarScroll atraso={0.12}>
+          <Cartao titulo="Engajamento" descricao="Comunicados, mensagens e convites">
+            <div className="vig-metrica-grid vig-metrica-grid--2 vig-metrica-grid--inline">
+              <Metrica rotulo="Comunicados ativos" valor={c.ativos} />
+              <Metrica rotulo="Leituras" valor={c.leituras} />
+              <Metrica rotulo="Mensagens 7d" valor={m.mensagens7d} />
+              <Metrica rotulo="Convites pendentes" valor={v.pendentes} />
+            </div>
+            <p className="vig-dashboard-detalhe-sub">
+              {m.conversasAtivas} conversas · {v.aceitos30d} convites aceitos (30d)
+            </p>
+          </Cartao>
+        </RevelarScroll>
+
+        <RevelarScroll atraso={0.14}>
+          <Cartao titulo="Auditoria" descricao="Últimos 7 dias">
+            <div className="vig-metrica-grid vig-metrica-grid--2 vig-metrica-grid--inline">
+              <Metrica rotulo="Logins" valor={a.logins7d} />
+              <Metrica rotulo="Envios" valor={a.envios7d} />
+              <Metrica rotulo="Downloads" valor={a.downloads7d} />
+              <Metrica rotulo="Eventos" valor={a.eventos7d} />
+            </div>
+          </Cartao>
+        </RevelarScroll>
       </div>
-    </article>
+    </div>
   )
 }

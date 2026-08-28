@@ -1,14 +1,7 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/index'
+import { Modal } from '@/components/vig/Modal'
+import { Botao } from '@/components/vig/Botao'
 
 interface ConfirmProps {
   open: boolean
@@ -20,7 +13,7 @@ interface ConfirmProps {
   loading?: boolean
 }
 
-/** Diálogo de confirmação baseado no Dialog do shadcn */
+/** Diálogo de confirmação padrão VIGMED */
 export function Confirm({
   open,
   onClose,
@@ -31,21 +24,19 @@ export function Confirm({
   loading,
 }: ConfirmProps) {
   return (
-    <Dialog open={open} onOpenChange={(estaAberto) => !estaAberto && onClose()}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{message}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="border-0 bg-transparent p-0 pt-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button variant="danger" onClick={onConfirm} loading={loading}>
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Modal
+      aberto={open}
+      onFechar={onClose}
+      titulo={title}
+      descricao={message}
+      rodape={
+        <>
+          <Botao variante="fantasma" onClick={onClose} filho="Cancelar" />
+          <Botao variante="perigo" carregando={loading} onClick={onConfirm} filho={confirmLabel} />
+        </>
+      }
+    >
+      <span className="sr-only">{message}</span>
+    </Modal>
   )
 }

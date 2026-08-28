@@ -12,6 +12,8 @@ import { itemEstaAtivo } from '@/lib/navegacao'
 import type { AmbienteApp } from '@/lib/ambiente'
 import type { Perfil } from '@/types'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { useMensagensNaoLidas } from '@/contexts/MensagensNaoLidasContext'
+import { ehHrefMensagens } from '@/lib/navegacao-badge'
 
 interface PropsBarraMobile {
   itens: ItemNavegacao[]
@@ -22,6 +24,7 @@ interface PropsBarraMobile {
 /** Navegação mobile - barra superior + menu lateral deslizante */
 export function BarraNavegacaoMobile({ itens, ambiente, perfil }: PropsBarraMobile) {
   const caminho = usePathname()
+  const { total: mensagensNaoLidas } = useMensagensNaoLidas()
   const [menuAberto, definirMenuAberto] = useState(false)
   const [grupoAbertoDesktop, definirGrupoAbertoDesktop] = useState<string | null>(null)
   const [grupoAbertoMobile, definirGrupoAbertoMobile] = useState<string | null>(null)
@@ -66,6 +69,9 @@ export function BarraNavegacaoMobile({ itens, ambiente, perfil }: PropsBarraMobi
                   <Link href={item.href} className={classe}>
                     <IconeAnimado nome={item.icone} tamanho={15} />
                     <span>{item.rotulo}</span>
+                    {ehHrefMensagens(item.href) && mensagensNaoLidas > 0 && (
+                      <span className="menu-nav-badge">{mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}</span>
+                    )}
                   </Link>
                 </motion.div>
               )
@@ -169,6 +175,9 @@ export function BarraNavegacaoMobile({ itens, ambiente, perfil }: PropsBarraMobi
                         <Link href={item.href} className={classe} onClick={() => definirMenuAberto(false)}>
                           <IconeAnimado nome={item.icone} tamanho={15} />
                           <span>{item.rotulo}</span>
+                          {ehHrefMensagens(item.href) && mensagensNaoLidas > 0 && (
+                            <span className="menu-nav-badge">{mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}</span>
+                          )}
                         </Link>
                       </li>
                     )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 
-/** Fundo do painel - malha de quadrados pequenos, gradiente esquerda→direita, parallax leve */
+/** Fundo do painel com malha e orbes VIGMED */
 export function FundoPainel() {
   const reduzirMovimento = useReducedMotion()
   const [desloc, definirDesloc] = useState({ x: 0, y: 0 })
@@ -14,7 +14,7 @@ export function FundoPainel() {
     const aoMover = (e: MouseEvent) => {
       const nx = e.clientX / window.innerWidth - 0.5
       const ny = e.clientY / window.innerHeight - 0.5
-      definirDesloc({ x: nx * 16, y: ny * 12 })
+      definirDesloc({ x: nx * 20, y: ny * 14 })
     }
 
     window.addEventListener('mousemove', aoMover, { passive: true })
@@ -23,6 +23,8 @@ export function FundoPainel() {
 
   return (
     <div className="app-shell-fundo" aria-hidden>
+      <div className="vig-fundo-orbe vig-fundo-orbe--teal" />
+      <div className="vig-fundo-orbe vig-fundo-orbe--navy" />
       <div
         className="painel-fundo-parallax"
         style={{

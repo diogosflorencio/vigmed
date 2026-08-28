@@ -1,16 +1,9 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui'
-import { Button, Badge } from '@/components/ui'
+import { Modal } from '@/components/vig/Modal'
+import { Botao } from '@/components/vig/Botao'
+import { Selo } from '@/components/vig/Selo'
+import { CheckboxInline } from '@/components/vig/Checkbox'
 import { IconeAnimado } from '@/components/ui/icone-animado'
 import { SeletorEmpresasUpload } from '@/components/documentos/SeletorEmpresasUpload'
 import {
@@ -22,6 +15,9 @@ import {
 } from '@/lib/documentos/acoes'
 import { ROTAS } from '@/lib/rotas'
 import { cn, formatarBytes, formatarData } from '@/lib/utils'
+import { useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface DocumentoResumo {
   id: string
@@ -171,112 +167,113 @@ export function DialogoDetalheDocumento({
   const visualizacoes = (detalhe?.total_visualizacoes as number) ?? documento.total_visualizacoes ?? 0
 
   return (
-    <Dialog open={aberto} onOpenChange={(v) => !v && onFechar()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="pr-6">{documento.titulo}</DialogTitle>
-        </DialogHeader>
+    <Modal
+      aberto={aberto}
+      onFechar={onFechar}
+      titulo={documento.titulo}
+      largo
+      className="vig-modal--documento"
+      rodape={
+        <>
+          <Botao variante="secundario" onClick={baixar} filho="Baixar" />
+          {podeExcluir && (
+            <Botao
+              variante="fantasma"
+              className={cn('text-[#b42318]')}
+              carregando={processando}
+              onClick={excluir}
+              filho="Excluir"
+            />
+          )}
+          <Botao variante="primario" onClick={onFechar} filho="Fechar" />
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        <div className="flex flex-wrap gap-2 text-xs items-center">
+          <Selo variante="padrao">{documento.nome_arquivo}</Selo>
+          {documento.tamanho_arquivo != null && (
+            <Selo variante="padrao">{formatarBytes(documento.tamanho_arquivo)}</Selo>
+          )}
+          <Selo variante={documento.origem_publicacao === 'empresa' ? 'padrao' : 'sucesso'}>
+            {documento.origem_publicacao === 'empresa' ? 'Empresa' : 'VIGMED'}
+          </Selo>
+          <span className="text-[var(--color-text-3)]">{formatarData(documento.criado_em)}</span>
+        </div>
 
-        <div className="grid gap-4">
-          <div className="flex flex-wrap gap-2 text-xs">
-            <Badge variant="default">{documento.nome_arquivo}</Badge>
-            {documento.tamanho_arquivo != null && (
-              <Badge variant="default">{formatarBytes(documento.tamanho_arquivo)}</Badge>
-            )}
-            <Badge variant={documento.origem_publicacao === 'empresa' ? 'default' : 'success'}>
-              {documento.origem_publicacao === 'empresa' ? 'Empresa' : 'VIGMED'}
-            </Badge>
-            <span className="text-(--color-text-3)">{formatarData(documento.criado_em)}</span>
+        <div className="grid gap-2 sm:grid-cols-3 text-sm">
+          <div>
+            <span className="text-[var(--color-text-3)]">Visualizações</span>
+            <p className="font-medium">{visualizacoes}</p>
           </div>
+          <div>
+            <span className="text-[var(--color-text-3)]">Downloads</span>
+            <p className="font-medium">{documento.total_downloads}</p>
+          </div>
+          <div>
+            <span className="text-[var(--color-text-3)]">Enviado por</span>
+            <p className="font-medium truncate">{enviadoPor?.nome_completo ?? '-'}</p>
+          </div>
+        </div>
 
-          <div className="grid gap-2 sm:grid-cols-3 text-sm">
-            <div>
-              <span className="text-(--color-text-3)">Visualizações</span>
-              <p className="font-medium">{visualizacoes}</p>
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] min-h-[200px] overflow-hidden">
+          {carregando ? (
+            <div className="flex h-48 items-center justify-center text-sm text-[var(--color-text-3)]">
+              Carregando preview...
             </div>
-            <div>
-              <span className="text-(--color-text-3)">Downloads</span>
-              <p className="font-medium">{documento.total_downloads}</p>
-            </div>
-            <div>
-              <span className="text-(--color-text-3)">Enviado por</span>
-              <p className="font-medium truncate">{enviadoPor?.nome_completo ?? '-'}</p>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-(--color-border) bg-(--color-surface-2) min-h-[200px] overflow-hidden">
-            {carregando ? (
-              <div className="flex h-48 items-center justify-center text-sm text-(--color-text-3)">
-                Carregando preview...
-              </div>
-            ) : previewUrl && ehPdf ? (
-              <iframe src={previewUrl} title={documento.titulo} className="h-64 w-full bg-white" />
-            ) : previewUrl && ehImagem ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt={documento.titulo} className="max-h-64 w-full object-contain" />
-            ) : (
-              <div className="flex h-48 flex-col items-center justify-center gap-2 text-sm text-(--color-text-3)">
-                <IconeAnimado nome="file-text" tamanho={24} />
-                Preview indisponível para este tipo.
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-(--color-border) p-3">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!documento.permitir_compartilhar}
-                disabled={processando}
-                onChange={(e) => alternarPublico(e.target.checked)}
-              />
-              Permitir visualização pública em {urlCompartilhamento().replace(/^https?:\/\//, '')}
-            </label>
-            {documento.permitir_compartilhar && (
-              <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs" onClick={copiarLink}>
-                Copiar link público
-              </Button>
-            )}
-          </div>
-
-          {modo === 'adm' && (
-            <div>
-              <p className="text-sm font-medium text-(--color-text-1) mb-2">
-                Empresas com acesso (um arquivo, várias empresas)
-              </p>
-              <SeletorEmpresasUpload
-                empresas={empresas}
-                selecionadas={empresaIds}
-                onChange={definirEmpresaIds}
-                titulo="Compartilhar com empresas"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                loading={processando}
-                onClick={salvarEmpresas}
-              >
-                Salvar empresas
-              </Button>
+          ) : previewUrl && ehPdf ? (
+            <iframe src={previewUrl} title={documento.titulo} className="h-64 w-full bg-white" />
+          ) : previewUrl && ehImagem ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt={documento.titulo} className="max-h-64 w-full object-contain" />
+          ) : (
+            <div className="flex h-48 flex-col items-center justify-center gap-2 text-sm text-[var(--color-text-3)]">
+              <IconeAnimado nome="file-text" tamanho={24} />
+              Preview indisponível para este tipo.
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={baixar}>
-            Baixar
-          </Button>
-          {podeExcluir && (
-            <Button variant="ghost" className={cn('text-(--color-danger)')} loading={processando} onClick={excluir}>
-              Excluir
-            </Button>
+        <div className="rounded-lg border border-[var(--color-border)] p-3">
+          <CheckboxInline
+            rotulo={`Permitir visualização pública em ${urlCompartilhamento().replace(/^https?:\/\//, '')}`}
+            checked={!!documento.permitir_compartilhar}
+            disabled={processando}
+            onChange={(e) => alternarPublico(e.target.checked)}
+          />
+          {documento.permitir_compartilhar && (
+            <Botao
+              variante="fantasma"
+              tamanho="sm"
+              className="mt-2 h-7 text-xs"
+              onClick={copiarLink}
+              filho="Copiar link público"
+            />
           )}
-          <Button variant="primary" onClick={onFechar}>
-            Fechar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+
+        {modo === 'adm' && (
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-1)] mb-2">
+              Empresas com acesso (um arquivo, várias empresas)
+            </p>
+            <SeletorEmpresasUpload
+              empresas={empresas}
+              selecionadas={empresaIds}
+              onChange={definirEmpresaIds}
+              titulo="Compartilhar com empresas"
+            />
+            <Botao
+              variante="secundario"
+              tamanho="sm"
+              className="mt-2"
+              carregando={processando}
+              onClick={salvarEmpresas}
+              filho="Salvar empresas"
+            />
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }

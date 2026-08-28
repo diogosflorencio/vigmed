@@ -11,7 +11,7 @@ import {
 } from '@/lib/tema/aplicar'
 import { salvarPreferenciasAparencia } from '@/lib/perfil/preferencias'
 import { ehRotaPublica, PREFERENCIAS_TEMA_PUBLICO } from '@/lib/tema/rotas-publicas'
-import type { ModoTema, IdTemaVisual, PreferenciasAparencia } from '@/lib/tema/tipos'
+import type { ModoTema, IdTemaVisual, PreferenciasAparencia, ModeloMenu } from '@/lib/tema/tipos'
 import { PREFERENCIAS_PADRAO } from '@/lib/tema/tipos'
 
 export type Tema = 'light' | 'dark'
@@ -20,10 +20,12 @@ interface ValorContextoTema {
   tema: Tema
   modo: ModoTema
   temaVisual: IdTemaVisual
+  modeloMenu: ModeloMenu
   montado: boolean
   alternarTema: () => void
   definirModo: (modo: ModoTema) => void
   definirTemaVisual: (tema: IdTemaVisual) => void
+  definirModeloMenu: (modelo: ModeloMenu) => void
   sincronizarDoPerfil: (metadados: Record<string, unknown> | undefined) => void
 }
 
@@ -76,9 +78,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const persistirRemoto = useCallback((proximas: PreferenciasAparencia) => {
     if (ehRotaPublica(pathname)) return
-    // Fora do setState/render: evita "Cannot update Router while rendering ThemeProvider"
     queueMicrotask(() => {
-      void salvarPreferenciasAparencia(proximas.modo, proximas.temaVisual).catch(() => {})
+      void salvarPreferenciasAparencia(proximas.modo, proximas.temaVisual, proximas.modeloMenu).catch(() => {})
     })
   }, [pathname])
 
@@ -114,6 +115,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [pathname, prefs, aplicarEPersistir],
   )
 
+  const definirModeloMenu = useCallback(
+    (modeloMenu: ModeloMenu) => {
+      if (ehRotaPublica(pathname)) return
+      aplicarEPersistir({ ...prefs, modeloMenu })
+    },
+    [pathname, prefs, aplicarEPersistir],
+  )
+
   const sincronizarDoPerfil = useCallback(
     (metadados: Record<string, unknown> | undefined) => {
       if (ehRotaPublica(pathname)) return
@@ -132,10 +141,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         tema: modoResolvido(prefsExibidas),
         modo: prefsExibidas.modo,
         temaVisual: prefsExibidas.temaVisual,
+        modeloMenu: prefsExibidas.modeloMenu,
         montado,
         alternarTema,
         definirModo,
         definirTemaVisual,
+        definirModeloMenu,
         sincronizarDoPerfil,
       }}
     >

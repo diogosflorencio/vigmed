@@ -48,6 +48,7 @@ const NAVEGACAO_ADM: ItemNavegacao[] = [
       { href: hrefPublico(ROTAS.adm.documentos), rotulo: 'Documentos', icone: 'file-text' },
       { href: hrefPublico(ROTAS.adm.comunicados), rotulo: 'Comunicados', icone: 'megaphone' },
       { href: hrefPublico(ROTAS.adm.mensagens), rotulo: 'Mensagens', icone: 'message' },
+      { href: hrefPublico(ROTAS.adm.blog), rotulo: 'Blog', icone: 'newspaper' },
     ],
   },
   {

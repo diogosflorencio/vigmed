@@ -104,6 +104,42 @@ function temaVivo(accentClaro: string, accentFgClaro: string, accentEscuro: stri
 /** Registro central; adicione frutas aqui */
 export const REGISTRO_TEMAS: readonly (MetaTemaVisual & { modos: ParModos })[] = [
   {
+    id: 'vigmed',
+    rotulo: 'VIGMED',
+    descricao: 'Azul institucional e teal clínico. Identidade padrão da plataforma.',
+    preview: ['#f4f7fb', '#0d9488', '#0f2744'],
+    modos: {
+      light: montarTokens(
+        '#0d9488',
+        '#ffffff',
+        ['#ffffff', '#f4f7fb', '#e8eef6'],
+        ['#0f2744', '#334155', '#64748b'],
+        ['#dbe4f0', '#94a3b8'],
+        false,
+        {
+          '--vig-navy': '#0f2744',
+          '--vig-navy-soft': '#1a365d',
+          '--vig-teal': '#0d9488',
+          '--vig-teal-soft': '#14b8a6',
+        },
+      ),
+      dark: montarTokens(
+        '#2dd4bf',
+        '#0f172a',
+        ['#152238', '#0f2744', '#1e3a5f'],
+        ['#f1f5f9', '#94a3b8', '#64748b'],
+        ['#1e3a5f', '#475569'],
+        true,
+        {
+          '--vig-navy': '#0f2744',
+          '--vig-navy-soft': '#152238',
+          '--vig-teal': '#2dd4bf',
+          '--vig-teal-soft': '#5eead4',
+        },
+      ),
+    },
+  },
+  {
     id: 'banana',
     rotulo: 'Banana',
     descricao: 'Neutro escuro com acento banana madura. Alto contraste.',
@@ -156,7 +192,7 @@ const mapaTema = Object.fromEntries(REGISTRO_TEMAS.map((t) => [t.id, t])) as Rec
 >
 
 export function obterDefinicaoTema(id: IdTemaVisual) {
-  return mapaTema[id] ?? mapaTema.banana
+  return mapaTema[id] ?? mapaTema.vigmed
 }
 
 export function obterVariaveisTema(id: IdTemaVisual, escuro: boolean): VariaveisTema {

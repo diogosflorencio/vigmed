@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { IconeAnimado } from '@/components/ui/icone-animado'
 import { MenuAcoesUsuario } from '@/components/layout/menu/MenuAcoesUsuario'
+import { useMensagensNaoLidas } from '@/contexts/MensagensNaoLidasContext'
+import { ehHrefMensagens } from '@/lib/navegacao-badge'
 import type { ItemNavegacao } from '@/lib/navegacao'
 import { itemEstaAtivo } from '@/lib/navegacao'
 import type { AmbienteApp } from '@/lib/ambiente'
@@ -21,6 +23,7 @@ interface Props {
 /** Variante 1 - barra lateral fixa à esquerda */
 export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
   const caminho = usePathname()
+  const { total: mensagensNaoLidas } = useMensagensNaoLidas()
   const [gruposAbertos, definirGruposAbertos] = useState<Record<string, boolean>>({})
   const [mobileAberto, definirMobileAberto] = useState(false)
   const rotuloAmbiente = ambiente === 'adm' ? 'Administração' : 'Portal empresas'
@@ -57,6 +60,9 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
                 <Link href={item.href} className={classe} onClick={() => definirMobileAberto(false)}>
                   <IconeAnimado nome={item.icone} tamanho={16} />
                   <span>{item.rotulo}</span>
+                  {ehHrefMensagens(item.href) && mensagensNaoLidas > 0 && (
+                    <span className="menu-nav-badge">{mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}</span>
+                  )}
                 </Link>
               </li>
             )

@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { ROTAS, hrefPublico } from '@/lib/rotas'
-import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
-import { SecaoPainel, CartaoPainel } from '@/components/layout/SecaoPainel'
+import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
 import { IconeAnimado } from '@/components/ui/icone-animado'
-import { Button } from '@/components/ui'
+import { Cartao } from '@/components/vig/Cartao'
+import { Metrica } from '@/components/vig/Metrica'
+import { Botao } from '@/components/vig/Botao'
 import { formatarDataHora } from '@/lib/utils'
 
 interface Props {
@@ -29,75 +30,86 @@ export function PainelInicioDocs({
 }: Props) {
   return (
     <SecaoPainel>
-      <CabecalhoPagina
-        titulo={`Olá, ${primeiroNome}`}
-        descricao="Resumo das suas atividades."
-      />
-
       <RevelarScroll>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { rotulo: 'Documentos', valor: totalDocumentos, icone: 'file-text' as const },
-            { rotulo: 'Comunicados não lidos', valor: comunicadosNaoLidos, icone: 'megaphone' as const },
-            { rotulo: 'Mensagens novas', valor: mensagensNovas, icone: 'message' as const },
-          ].map((m) => (
-            <div key={m.rotulo} className="metrica-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.55rem' }}>
-              <div className="metrica-icone">
-                <IconeAnimado nome={m.icone} tamanho={16} />
-              </div>
-              <div>
-                <p className="metrica-valor">{m.valor}</p>
-                <p className="metrica-titulo">{m.rotulo}</p>
-              </div>
-            </div>
-          ))}
+        <div className="vig-hero-painel">
+          <div>
+            <p className="vig-landing-kicker" style={{ marginBottom: '0.35rem' }}>Portal empresas</p>
+            <h2>Olá, {primeiroNome}!</h2>
+            <p>
+              Acompanhe documentos, comunicados e mensagens da sua empresa em um painel pensado
+              para o dia a dia.
+            </p>
+          </div>
+          <div className="vig-hero-painel-icone" aria-hidden>
+            <IconeAnimado nome="shield" tamanho={28} />
+          </div>
         </div>
       </RevelarScroll>
 
-      <RevelarScroll atraso={0.05}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--color-border)', borderRadius: '0.75rem', overflow: 'hidden' }}>
-          <Link href={hrefPublico(ROTAS.docs.documentos)} style={{ display: 'block', padding: '0.9rem 1rem', background: 'var(--color-surface)', textDecoration: 'none', transition: 'background 0.15s' }}
-            className="hover:bg-(--color-surface-2)">
-            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-1)' }}>Documentos</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', marginTop: '0.2rem' }}>Enviar e baixar arquivos da empresa</p>
+      <RevelarScroll atraso={0.04}>
+        <div className="vig-metrica-grid">
+          <Metrica
+            rotulo="Documentos"
+            valor={totalDocumentos}
+            icone={<IconeAnimado nome="file-text" tamanho={16} />}
+            destaque={totalDocumentos > 0}
+          />
+          <Metrica
+            rotulo="Comunicados não lidos"
+            valor={comunicadosNaoLidos}
+            icone={<IconeAnimado nome="megaphone" tamanho={16} />}
+            destaque={comunicadosNaoLidos > 0}
+          />
+          <Metrica
+            rotulo="Mensagens novas"
+            valor={mensagensNovas}
+            icone={<IconeAnimado nome="message" tamanho={16} />}
+            destaque={mensagensNovas > 0}
+          />
+        </div>
+      </RevelarScroll>
+
+      <RevelarScroll atraso={0.08}>
+        <div className="vig-acesso-rapido">
+          <Link href={hrefPublico(ROTAS.docs.documentos)} className="vig-acesso-item">
+            <strong>Documentos</strong>
+            <span>Enviar e baixar arquivos da empresa</span>
           </Link>
-          <Link href={hrefPublico(ROTAS.docs.comunicados)} style={{ display: 'block', padding: '0.9rem 1rem', background: 'var(--color-surface)', textDecoration: 'none', transition: 'background 0.15s' }}
-            className="hover:bg-(--color-surface-2)">
-            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-1)' }}>Comunicados</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', marginTop: '0.2rem' }}>Avisos da administração</p>
+          <Link href={hrefPublico(ROTAS.docs.comunicados)} className="vig-acesso-item">
+            <strong>Comunicados</strong>
+            <span>Avisos da administração</span>
+          </Link>
+          <Link href={hrefPublico(ROTAS.docs.mensagens)} className="vig-acesso-item">
+            <strong>Mensagens</strong>
+            <span>Conversas com a equipe VIGMED</span>
           </Link>
         </div>
       </RevelarScroll>
 
-      <RevelarScroll atraso={0.09}>
-        <CartaoPainel titulo="Recentes">
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <RevelarScroll atraso={0.12}>
+        <Cartao titulo="Documentos recentes" descricao="Últimos arquivos disponíveis no portal.">
+          <div className="vig-lista-docs">
             {documentosRecentes.map((doc) => (
-              <Link
-                key={doc.id}
-                href={hrefPublico(ROTAS.docs.documentos)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0', borderBottom: '1px solid var(--color-border)', textDecoration: 'none', transition: 'opacity 0.15s' }}
-                className="last:border-0 hover:opacity-75"
-              >
+              <Link key={doc.id} href={hrefPublico(ROTAS.docs.documentos)} className="vig-lista-docs-item">
                 <IconeAnimado nome="file-text" tamanho={13} className="shrink-0 text-(--color-text-3)" />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {doc.titulo}
-                  </p>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--color-text-3)' }}>{formatarDataHora(doc.criado_em)}</p>
+                <div className="vig-lista-docs-texto">
+                  <p>{doc.titulo}</p>
+                  <span>{formatarDataHora(doc.criado_em)}</span>
                 </div>
               </Link>
             ))}
             {documentosRecentes.length === 0 && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-3)', padding: '0.75rem 0', textAlign: 'center' }}>
-                Nenhum documento recente.
-              </p>
+              <p className="vig-lista-docs-vazio">Nenhum documento recente.</p>
             )}
           </div>
-          <Button variant="ghost" size="sm" className="mt-2 w-full h-7 text-xs" render={<Link href={hrefPublico(ROTAS.docs.documentos)} />}>
-            Ver todos
-          </Button>
-        </CartaoPainel>
+          <Botao
+            href={hrefPublico(ROTAS.docs.documentos)}
+            variante="fantasma"
+            tamanho="sm"
+            className="w-full mt-3"
+            filho="Ver todos"
+          />
+        </Cartao>
       </RevelarScroll>
     </SecaoPainel>
   )

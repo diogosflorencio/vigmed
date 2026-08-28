@@ -6,7 +6,7 @@ import { ROTAS } from '@/lib/rotas'
 
 export const metadata: Metadata = {
   title: 'Blog VIGMED',
-  description: 'Blogs sobre assuntos variados. Em desenvolvimento.',
+  description: 'Artigos sobre medicina do trabalho, saúde ocupacional e gestão documental.',
   robots: { index: true, follow: true },
   openGraph: {
     type: 'website',
@@ -36,10 +36,10 @@ export default async function PaginaBlogLista() {
       <main className="mx-auto max-w-4xl px-4 py-10">
         <div className="mb-10">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[var(--color-text-1)]">
-            Blogs sobre assuntos variados
+            Blog VIGMED
           </h1>
           <p className="mt-3 text-lg text-[var(--color-text-2)] max-w-2xl">
-            Em desenvolvimento.
+            Conteúdos sobre saúde ocupacional, normas regulamentadoras e uso do portal para empresas.
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export default async function PaginaBlogLista() {
           ))}
           {!posts.length && (
             <div className="surface-card p-12 text-center text-muted-foreground">
-              Em desenvolvimento.
+              Nenhum artigo publicado ainda.
             </div>
           )}
         </div>

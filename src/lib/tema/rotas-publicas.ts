@@ -3,7 +3,8 @@ import type { PreferenciasAparencia } from '@/lib/tema/tipos'
 /** Aparência fixa da landing, blog e telas de entrada */
 export const PREFERENCIAS_TEMA_PUBLICO: PreferenciasAparencia = {
   modo: 'light',
-  temaVisual: 'banana',
+  temaVisual: 'vigmed',
+  modeloMenu: 'dock',
 }
 
 /** Paths que sempre usam tema institucional claro (não leem prefs do usuário) */
@@ -116,16 +117,16 @@ export function gerarScriptTemaInicial(
 
     if (publico) {
       document.documentElement.dataset.theme = 'light';
-      document.documentElement.dataset.tema = 'banana';
+      document.documentElement.dataset.tema = 'vigmed';
       document.documentElement.classList.remove('dark');
-      aplicarVars('banana', false);
+      aplicarVars('vigmed', false);
       return;
     }
 
     var modo = localStorage.getItem('vigmed-theme') || 'system';
-    var temaRaw = localStorage.getItem('vigmed-tema-visual') || 'banana';
-    var temas = ['banana','limao','azulao','acai'];
-    var tema = temas.indexOf(temaRaw) >= 0 ? temaRaw : 'banana';
+    var temaRaw = localStorage.getItem('vigmed-tema-visual') || 'vigmed';
+    var temas = ['vigmed','banana','limao','azulao','acai'];
+    var tema = temas.indexOf(temaRaw) >= 0 ? temaRaw : 'vigmed';
     var escuro = modo === 'dark' || (modo !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = escuro ? 'dark' : 'light';
     document.documentElement.dataset.tema = tema;
@@ -133,9 +134,9 @@ export function gerarScriptTemaInicial(
     aplicarVars(tema, escuro);
   } catch (e) {
     document.documentElement.dataset.theme = 'light';
-    document.documentElement.dataset.tema = 'banana';
+    document.documentElement.dataset.tema = 'vigmed';
     document.documentElement.classList.remove('dark');
-    aplicarVars('banana', false);
+    aplicarVars('vigmed', false);
   }
 })();
 `.trim()

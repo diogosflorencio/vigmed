@@ -4,15 +4,25 @@ import { revalidatePath } from 'next/cache'
 import { ROTAS } from '@/lib/rotas'
 import { exigirAutenticacao } from '@/lib/auth/sessao'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
-import type { ModoTema, IdTemaVisual } from '@/lib/tema/tipos'
+import type { PreferenciasAparencia } from '@/lib/tema/tipos'
+import { PREFERENCIAS_PADRAO, normalizarIdTemaVisual, normalizarModeloMenu } from '@/lib/tema/tipos'
+import type { ModoTema } from '@/lib/tema/tipos'
 
-export async function salvarPreferenciasAparencia(modo: ModoTema, temaVisual: IdTemaVisual) {
+export async function salvarPreferenciasAparencia(
+  modo: ModoTema,
+  temaVisual: PreferenciasAparencia['temaVisual'],
+  modeloMenu?: PreferenciasAparencia['modeloMenu'],
+) {
   const perfil = await exigirAutenticacao()
   const supabase = await criarClienteSupabaseServidor()
 
   const metadados = {
     ...(perfil.metadados ?? {}),
-    aparencia: { modo, temaVisual },
+    aparencia: {
+      modo,
+      temaVisual: normalizarIdTemaVisual(temaVisual),
+      modeloMenu: normalizarModeloMenu(modeloMenu),
+    },
   }
 
   const { error } = await supabase
@@ -22,8 +32,11 @@ export async function salvarPreferenciasAparencia(modo: ModoTema, temaVisual: Id
 
   if (error) return { erro: 'Não foi possível salvar preferências.' }
 
-  // Sem revalidatePath aqui: evita atualizar o Router durante troca de tema no client
   return { sucesso: true }
+}
+
+export async function salvarPreferenciasCompletas(prefs: PreferenciasAparencia) {
+  return salvarPreferenciasAparencia(prefs.modo, prefs.temaVisual, prefs.modeloMenu)
 }
 
 export async function atualizarPerfil(dados: {

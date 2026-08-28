@@ -7,7 +7,9 @@ import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { Badge, Button } from '@/components/ui'
+import { Selo } from '@/components/vig/Selo'
+import { Metrica } from '@/components/vig/Metrica'
+import { Botao } from '@/components/vig/Botao'
 import { DialogoDetalheDocumento } from '@/components/documentos/DialogoDetalheDocumento'
 import { SeletorEmpresasUpload } from '@/components/documentos/SeletorEmpresasUpload'
 import { cn, formatarBytes, formatarData } from '@/lib/utils'
@@ -139,6 +141,8 @@ export function PainelDocumentos({
   return (
     <SecaoPainel>
       <CabecalhoPagina
+        hero
+        rotulo={modo === 'adm' ? 'Administração' : 'Portal'}
         titulo={tituloPagina ?? 'Documentos'}
         descricao={
           descricaoPagina ??
@@ -146,12 +150,16 @@ export function PainelDocumentos({
             ? 'Envie arquivos para uma ou várias empresas. O mesmo arquivo é compartilhado via vínculos, sem duplicar no bucket.'
             : 'Publique e acesse os arquivos da sua empresa.')
         }
+        icone={<IconeAnimado nome="file-text" tamanho={28} />}
         acoes={
           <label className="cursor-pointer">
-            <Button variant="primary" size="sm" loading={enviando} render={<span />}>
-              <IconeAnimado nome="cloud-upload" tamanho={15} />
-              Enviar arquivo
-            </Button>
+            <Botao
+              variante="teal"
+              tamanho="sm"
+              disabled={enviando}
+              icone={<IconeAnimado nome="cloud-upload" tamanho={15} />}
+              filho="Enviar arquivo"
+            />
             <input
               type="file"
               className="hidden"
@@ -160,6 +168,16 @@ export function PainelDocumentos({
           </label>
         }
       />
+
+      <RevelarScroll atraso={0.03}>
+        <div className="vig-metrica-grid vig-metrica-grid--3">
+          <Metrica rotulo="Total na lista" valor={filtrados.length} icone={<IconeAnimado nome="file-text" tamanho={16} />} />
+          <Metrica rotulo="Todos cadastrados" valor={documentos.length} icone={<IconeAnimado nome="folder-open" tamanho={16} />} />
+          {modo === 'adm' && (
+            <Metrica rotulo="Empresas" valor={empresas.length} icone={<IconeAnimado nome="building" tamanho={16} />} />
+          )}
+        </div>
+      </RevelarScroll>
 
       {mostrarSeletorEmpresas && (
         <RevelarScroll>
@@ -273,21 +291,16 @@ export function PainelDocumentos({
                     )}
                     <td className="hidden sm:table-cell">
                       {doc.categorias ? (
-                        <Badge variant="default" className="text-[10px] py-0">
-                          {doc.categorias.nome}
-                        </Badge>
+                        <Selo variante="teal">{doc.categorias.nome}</Selo>
                       ) : (
                         <span className="tabela-mono">-</span>
                       )}
                     </td>
                     {mostrarStats && (
                       <td className="hidden lg:table-cell">
-                        <Badge
-                          variant={doc.origem_publicacao === 'empresa' ? 'default' : 'success'}
-                          className="text-[10px] py-0"
-                        >
+                        <Selo variante={doc.origem_publicacao === 'empresa' ? 'navy' : 'sucesso'}>
                           {doc.origem_publicacao === 'empresa' ? 'Empresa' : 'VIGMED'}
-                        </Badge>
+                        </Selo>
                       </td>
                     )}
                     <td className="hidden sm:table-cell tabela-mono">
@@ -300,9 +313,9 @@ export function PainelDocumentos({
                       <td className="hidden xl:table-cell tabela-mono">{doc.total_downloads}</td>
                     )}
                     <td className="hidden md:table-cell">
-                      <Badge variant={doc.permitir_compartilhar ? 'success' : 'default'} className="text-[10px] py-0">
+                      <Selo variante={doc.permitir_compartilhar ? 'sucesso' : 'padrao'}>
                         {doc.permitir_compartilhar ? 'Sim' : 'Não'}
-                      </Badge>
+                      </Selo>
                     </td>
                   </tr>
                 ))}
