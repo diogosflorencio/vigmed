@@ -8,7 +8,7 @@ import { ehAdministrador } from '@/lib/auth/sessao'
 import { hrefPublico, ROTAS, urlDoAmbiente } from '@/lib/rotas'
 import type { PapelUsuario } from '@/types'
 
-/** URL base para telas de autenticação unificadas (fallback por env). */
+/** URL base para telas de autenticação unificadas (SITE_URL canônico). */
 export function urlBaseAuth(): string {
   return obterUrlBaseDoAmbiente('site')
 }
