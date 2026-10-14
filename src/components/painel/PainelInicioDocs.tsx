@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ROTAS, hrefPublico } from '@/lib/rotas'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
-import { BannerPainel } from '@/components/painel/BannerPainel'
+import { BannerPainel, type ChipBanner } from '@/components/painel/BannerPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
 import { Cartao } from '@/components/vig/Cartao'
 import { Metrica } from '@/components/vig/Metrica'
@@ -72,11 +72,11 @@ export function PainelInicioDocs({
   const pctCota =
     cota && cota.limite > 0 ? Math.min((cota.usado / cota.limite) * 100, 100) : null
 
-  const chips = [
+  const chips: ChipBanner[] = [
     {
       rotulo: 'documentos',
       valor: totalDocumentos,
-      tom: 'neutro' as const,
+      tom: 'neutro',
       href: hrefPublico(ROTAS.docs.documentos),
     },
   ]

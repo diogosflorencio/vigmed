@@ -3,7 +3,7 @@ import { PainelPendenciasAdm } from '@/components/painel/PainelPendenciasAdm'
 import { PainelAtividadeRecenteAdm } from '@/components/painel/PainelAtividadeRecenteAdm'
 import { PainelAcessoRapidoAdm } from '@/components/painel/PainelAcessoRapidoAdm'
 import { PainelConsumoAdm } from '@/components/painel/PainelConsumoAdm'
-import { BannerPainel } from '@/components/painel/BannerPainel'
+import { BannerPainel, type ChipBanner } from '@/components/painel/BannerPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
 import { hrefPublico, ROTAS } from '@/lib/rotas'
 import { formatarBytes } from '@/lib/utils'
@@ -34,22 +34,22 @@ export function PainelPainelAdm({
   const topUsuario = consumo.usuarios[0]
   const r2 = consumo.infra.find((i) => i.id === 'cloudflare')
 
-  const chips = [
+  const chips: ChipBanner[] = [
     {
       rotulo: 'R2 em uso',
       valor: r2?.resumo ?? formatarBytes(e.armazenamentoUsado),
-      tom: 'neutro' as const,
+      tom: 'neutro',
     },
     {
       rotulo: 'empresas ativas',
       valor: e.ativas,
-      tom: 'neutro' as const,
+      tom: 'neutro',
       href: hrefPublico(ROTAS.adm.empresas),
     },
     {
       rotulo: 'usuários',
       valor: u.ativos,
-      tom: 'neutro' as const,
+      tom: 'neutro',
       href: hrefPublico(ROTAS.adm.usuarios),
     },
   ]

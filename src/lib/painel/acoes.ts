@@ -301,7 +301,7 @@ export async function carregarPainelAdmin() {
   return {
     estatisticas,
     pendencias,
-    atividadeRecente: atividadeRecente as Awaited<ReturnType<typeof listarAtividadeRecente>>,
+    atividadeRecente: atividadeRecente as unknown as Awaited<ReturnType<typeof listarAtividadeRecente>>,
     consumo,
   }
 }
