@@ -19,7 +19,7 @@ export async function POST(requisicao: Request) {
     ])
 
     const corpo = await requisicao.json()
-    const { nomeArquivo, tipoMime, tamanho, titulo, empresaIds, categoriaId } = corpo
+    const { nomeArquivo, tipoMime, tamanho, titulo, empresaIds, categoriaId, validoAte } = corpo
 
     if (!nomeArquivo || !tipoMime || !titulo) {
       return NextResponse.json({ erro: 'Dados incompletos' }, { status: 400 })
@@ -49,7 +49,7 @@ export async function POST(requisicao: Request) {
     const origem = origemPublicacaoDocumento(perfil)
     const uploadAdmin = ehAdministrador(perfil.papel)
 
-    const { obterExtensoesPermitidas, obterTamanhoMaxUploadBytes } = await import(
+    const { obterExtensoesPermitidas, obterTamanhoMaxUploadBytes, obterValorConfiguracao } = await import(
       '@/lib/configuracoes/acoes'
     )
     const tamanhoMax = await obterTamanhoMaxUploadBytes()
@@ -93,6 +93,18 @@ export async function POST(requisicao: Request) {
       }
     }
 
+    let validoAteValor: string | null = null
+    if (typeof validoAte === 'string' && validoAte.trim()) {
+      const data = validoAte.trim().slice(0, 10)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(data)) validoAteValor = data
+    } else {
+      const diasRetencao = await obterValorConfiguracao<number>('dias_retencao', 0)
+      if (diasRetencao > 0) {
+        const { calcularValidoAtePorRetencao } = await import('@/lib/documentos/validade')
+        validoAteValor = calcularValidoAtePorRetencao(diasRetencao)
+      }
+    }
+
     const { error: erroInsert } = await supabase.from('documentos').insert({
       id: documentoId,
       titulo,
@@ -104,6 +116,7 @@ export async function POST(requisicao: Request) {
       categoria_id: categoriaId ?? null,
       enviado_por: perfil.id,
       origem_publicacao: origem,
+      valido_ate: validoAteValor,
     })
 
     if (erroInsert) {

@@ -10,13 +10,12 @@ interface Props {
   onPedir: () => void
   onConfirmar: () => void
   onCancelar: () => void
-  /** Visual mais compacto para chat / listas densas */
   compacta?: boolean
-  /** Texto curto na confirmação */
+  rotulo?: string
   rotuloConfirmar?: string
 }
 
-/** Exclusão na linha: lixeira → confirma / cancela */
+/** Exclusão inline: pedir → confirmar ou cancelar (sem modal). */
 export function ConfirmacaoExclusaoInline({
   ariaLabel,
   confirmando,
@@ -25,6 +24,7 @@ export function ConfirmacaoExclusaoInline({
   onConfirmar,
   onCancelar,
   compacta = false,
+  rotulo = 'Excluir',
   rotuloConfirmar = 'Excluir?',
 }: Props) {
   if (confirmando) {
@@ -37,24 +37,26 @@ export function ConfirmacaoExclusaoInline({
         role="group"
         aria-label={`Confirmar ${ariaLabel}`}
       >
-        <span className="exclusao-inline-rotulo">{rotuloConfirmar}</span>
+        {!compacta && <span className="exclusao-inline-rotulo">{rotuloConfirmar}</span>}
         <button
           type="button"
           className="exclusao-inline-btn exclusao-inline-btn--ok"
           disabled={desabilitado}
           onClick={onConfirmar}
           aria-label={`Confirmar ${ariaLabel}`}
+          title="Confirmar"
         >
-          <Check size={compacta ? 13 : 14} strokeWidth={2.5} />
+          {compacta ? <Check size={14} strokeWidth={2.5} /> : 'Sim'}
         </button>
         <button
           type="button"
           className="exclusao-inline-btn exclusao-inline-btn--cancelar"
           disabled={desabilitado}
           onClick={onCancelar}
-          aria-label="Cancelar exclusão"
+          aria-label="Cancelar"
+          title="Cancelar"
         >
-          <X size={compacta ? 13 : 14} strokeWidth={2.5} />
+          {compacta ? <X size={14} strokeWidth={2.5} /> : 'Não'}
         </button>
       </div>
     )
@@ -64,15 +66,15 @@ export function ConfirmacaoExclusaoInline({
     <button
       type="button"
       className={cn(
-        'exclusao-inline exclusao-inline-btn exclusao-inline-btn--pedir',
-        compacta && 'exclusao-inline--compacta',
+        'exclusao-inline-btn exclusao-inline-btn--pedir',
+        compacta && 'exclusao-inline-btn--icone',
       )}
       disabled={desabilitado}
       onClick={onPedir}
       aria-label={ariaLabel}
       title={ariaLabel}
     >
-      <Trash2 size={compacta ? 13 : 14} strokeWidth={2.2} />
+      {compacta ? <Trash2 size={14} strokeWidth={2.2} /> : rotulo}
     </button>
   )
 }

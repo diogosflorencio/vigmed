@@ -1,6 +1,5 @@
 'use client'
 
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { PipulaDock } from '@/components/layout/menu/PipulaDock'
 import { sair } from '@/lib/auth/acoes'
@@ -46,52 +45,48 @@ export function MenuAcoesUsuario({ perfil, compacto, noDock, mobileComRotulo, cl
                   onClick={() => sair()}
                   aria-label="Sair"
                 >
-                  <span className="menu-dock-item-icone">
-                    <IconeAnimado nome="logout" tamanho={18} />
-                  </span>
-                  <span className="menu-dock-item-rotulo">Sair</span>
+                  <span className="menu-dock-item-rotulo menu-dock-item-rotulo--sair">Sair</span>
                 </button>
               </>
             ) : (
               <>
-            <PipulaDock texto={rotuloTema}>
-              {(pipula) => (
-                <ThemeToggle
-                  className="menu-acoes-btn menu-acoes-btn--dock"
-                  ref={pipula.ref as (node: HTMLButtonElement | null) => void}
-                  onMouseEnter={pipula.onMouseEnter}
-                  onMouseLeave={pipula.onMouseLeave}
-                  onFocus={pipula.onFocus}
-                  onBlur={pipula.onBlur}
-                />
-              )}
-            </PipulaDock>
-            <PipulaDock texto="Sair">
-              {(pipula) => (
-                <button
-                  type="button"
-                  className="menu-acoes-btn menu-acoes-btn--dock"
-                  onClick={() => sair()}
-                  aria-label="Sair"
-                  ref={pipula.ref as (node: HTMLButtonElement | null) => void}
-                  onMouseEnter={pipula.onMouseEnter}
-                  onMouseLeave={pipula.onMouseLeave}
-                  onFocus={pipula.onFocus}
-                  onBlur={pipula.onBlur}
-                >
-                  <IconeAnimado nome="logout" tamanho={18} />
-                </button>
-              )}
-            </PipulaDock>
+                <PipulaDock texto={rotuloTema}>
+                  {(pipula) => (
+                    <ThemeToggle
+                      className="menu-acoes-btn menu-acoes-btn--dock"
+                      ref={pipula.ref as (node: HTMLButtonElement | null) => void}
+                      onMouseEnter={pipula.onMouseEnter}
+                      onMouseLeave={pipula.onMouseLeave}
+                      onFocus={pipula.onFocus}
+                      onBlur={pipula.onBlur}
+                    />
+                  )}
+                </PipulaDock>
+                <PipulaDock texto="Sair">
+                  {(pipula) => (
+                    <button
+                      type="button"
+                      className="menu-acoes-btn menu-acoes-btn--dock menu-acoes-btn--sair-mini"
+                      onClick={() => sair()}
+                      aria-label="Sair"
+                      ref={pipula.ref as (node: HTMLButtonElement | null) => void}
+                      onMouseEnter={pipula.onMouseEnter}
+                      onMouseLeave={pipula.onMouseLeave}
+                      onFocus={pipula.onFocus}
+                      onBlur={pipula.onBlur}
+                    >
+                      Sair
+                    </button>
+                  )}
+                </PipulaDock>
               </>
             )}
           </>
         ) : (
           <>
             <ThemeToggle className="menu-acoes-btn" />
-            <button type="button" className="menu-acoes-btn" onClick={() => sair()}>
-              <IconeAnimado nome="logout" tamanho={14} />
-              {!compacto && <span>Sair</span>}
+            <button type="button" className="menu-acoes-btn menu-acoes-btn--sair-texto" onClick={() => sair()}>
+              Sair
             </button>
           </>
         )}

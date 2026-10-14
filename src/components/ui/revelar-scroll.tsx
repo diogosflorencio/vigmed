@@ -1,7 +1,6 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface PropsRevelarScroll {
@@ -10,19 +9,14 @@ interface PropsRevelarScroll {
   atraso?: number
 }
 
-/** Revela conteúdo com animação suave ao entrar no viewport */
+/** Entrada suave ao montar, leve, estilo app */
 export function RevelarScroll({ children, className, atraso = 0 }: PropsRevelarScroll) {
-  const reduzir = useReducedMotion()
-
   return (
-    <motion.div
-      className={cn(className)}
-      initial={reduzir ? false : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.12, margin: '0px 0px -8% 0px' }}
-      transition={{ duration: 0.42, delay: atraso, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      className={cn('app-reveal', className)}
+      style={atraso ? { animationDelay: `${atraso}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }

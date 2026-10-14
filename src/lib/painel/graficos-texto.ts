@@ -72,7 +72,7 @@ export function blocoBarras(itens: ItemGrafico[], opcoes?: OpcoesBlocoBarras): s
   if (modo === 'parte') {
     const rotuloTotal = truncarRotulo('Total')
     const numTotal = String(referencia).padStart(6, ' ')
-    return `${linhas.join('\n')}\n${rotuloTotal} ${'─'.repeat(opcoes?.largura ?? 24)} ${numTotal}`
+    return `${linhas.join('\n')}\n${rotuloTotal} ${'-'.repeat(opcoes?.largura ?? 24)} ${numTotal}`
   }
 
   return linhas.join('\n')

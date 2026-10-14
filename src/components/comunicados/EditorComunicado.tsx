@@ -68,8 +68,8 @@ export function EditorComunicado({
   if (!editor) return null
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-1)]', className)}>
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--color-border)] p-1.5">
+    <div className={cn('com-editor-shell', className)}>
+      <div className="com-editor-barra">
         <BotaoBarra ativo={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} titulo="Negrito">
           <Bold size={15} />
         </BotaoBarra>
@@ -79,14 +79,14 @@ export function EditorComunicado({
         <BotaoBarra ativo={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} titulo="Sublinhado">
           <UnderlineIcon size={15} />
         </BotaoBarra>
-        <span className="mx-1 h-5 w-px bg-[var(--color-border)]" />
+        <span className="com-editor-sep" />
         <BotaoBarra ativo={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} titulo="Título">
           <Heading2 size={15} />
         </BotaoBarra>
         <BotaoBarra ativo={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} titulo="Subtítulo">
           <Heading3 size={15} />
         </BotaoBarra>
-        <span className="mx-1 h-5 w-px bg-[var(--color-border)]" />
+        <span className="com-editor-sep" />
         <BotaoBarra ativo={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} titulo="Lista">
           <List size={15} />
         </BotaoBarra>
@@ -96,7 +96,7 @@ export function EditorComunicado({
         <BotaoBarra ativo={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} titulo="Citação">
           <Quote size={15} />
         </BotaoBarra>
-        <span className="mx-1 h-5 w-px bg-[var(--color-border)]" />
+        <span className="com-editor-sep" />
         <BotaoBarra ativo={editor.isActive('link')} onClick={adicionarLink} titulo="Link">
           <Link2 size={15} />
         </BotaoBarra>
@@ -122,12 +122,7 @@ function BotaoBarra({
       type="button"
       title={titulo}
       onClick={onClick}
-      className={cn(
-        'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
-        ativo
-          ? 'bg-[var(--glass-nav-active)] text-[var(--color-text-1)]'
-          : 'text-[var(--color-text-2)] hover:bg-[var(--glass-nav-hover)]',
-      )}
+      className={cn('com-editor-btn', ativo && 'com-editor-btn--ativo')}
     >
       {children}
     </button>

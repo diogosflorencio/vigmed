@@ -1,174 +1,183 @@
 'use client'
 
-import { type ComponentProps, type ReactNode } from 'react'
-import { Button as BotaoShadcn } from '@/components/ui/button'
-import { Input as InputShadcn } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea as TextareaShadcn } from '@/components/ui/textarea'
-import { Badge as BadgeShadcn } from '@/components/ui/badge'
-import { Avatar as AvatarShadcn, AvatarFallback } from '@/components/ui/avatar'
-import { Skeleton as SkeletonShadcn } from '@/components/ui/skeleton'
-import { Spinner } from '@/components/ui/spinner'
-import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { cn, obterIniciais } from '@/lib/utils'
+import { cloneElement, createContext, isValidElement, useContext, type ComponentProps, type ReactElement, type ReactNode } from 'react'
+import { Botao, type VarianteBotao } from '@/components/vig/Botao'
+import { Campo } from '@/components/vig/Campo'
+import { AreaTexto } from '@/components/vig/AreaTexto'
+import { Seletor } from '@/components/vig/Seletor'
+import { Selo } from '@/components/vig/Selo'
+import { Avatar as AvatarVig } from '@/components/vig/Avatar'
+import { Cartao } from '@/components/vig/Cartao'
+import { Modal } from '@/components/vig/Modal'
+import { Vazio } from '@/components/vig/Vazio'
+import { cn } from '@/lib/utils'
 
-// Reexporta componentes shadcn diretamente
-export { Button as BotaoBase } from '@/components/ui/button'
-export { Input as InputBase } from '@/components/ui/input'
-export { Label } from '@/components/ui/label'
-export { Textarea as TextareaBase } from '@/components/ui/textarea'
-export { Badge as BadgeBase, badgeVariants } from '@/components/ui/badge'
-export { Avatar as AvatarBase, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-export { Skeleton as SkeletonBase } from '@/components/ui/skeleton'
-export { Spinner } from '@/components/ui/spinner'
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardAction,
-} from '@/components/ui/card'
-export { Separator } from '@/components/ui/separator'
-export {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog'
+export { Botao, Campo, AreaTexto, Seletor, Selo, Cartao, Modal }
+export { Checkbox, CheckboxInline } from '@/components/vig/Checkbox'
+export { Metrica } from '@/components/vig/Metrica'
+export { ChipSeletor } from '@/components/vig/ChipSeletor'
+export { FlipBox } from '@/components/vig/FlipBox'
+export { PaginaHero } from '@/components/vig/PaginaHero'
+export { Confirm } from '@/components/ui/confirmar'
 
-type VarianteBotao = 'primary' | 'ghost' | 'danger' | 'outline'
-type TamanhoBotao = 'sm' | 'md' | 'lg'
+type VarianteBotaoLegado = 'primary' | 'ghost' | 'danger' | 'outline'
+type TamanhoBotaoLegado = 'sm' | 'md' | 'lg'
 
-interface BotaoProps extends Omit<ComponentProps<typeof BotaoShadcn>, 'variant' | 'size'> {
-  variant?: VarianteBotao
-  size?: TamanhoBotao
-  loading?: boolean
+const mapaBotao: Record<VarianteBotaoLegado, VarianteBotao> = {
+  primary: 'primario',
+  ghost: 'fantasma',
+  danger: 'perigo',
+  outline: 'secundario',
 }
 
-const mapaVarianteBotao = {
-  primary: 'default',
-  ghost: 'ghost',
-  danger: 'destructive',
-  outline: 'outline',
-} as const
+interface BotaoLegadoProps extends Omit<ComponentProps<typeof Botao>, 'variante' | 'carregando' | 'filho'> {
+  variant?: VarianteBotaoLegado
+  size?: TamanhoBotaoLegado
+  loading?: boolean
+  render?: ReactNode
+}
 
-const mapaTamanhoBotao = {
-  sm: 'sm',
-  md: 'default',
-  lg: 'lg',
-} as const
-
-/** Botão com API compatível + suporte a loading */
+/** @deprecated Preferir `Botao` de `@/components/vig/Botao` */
 export function Button({
   variant = 'outline',
   size = 'md',
   loading,
-  disabled,
   children,
   className,
+  render,
   ...props
-}: BotaoProps) {
-  return (
-    <BotaoShadcn
-      variant={mapaVarianteBotao[variant]}
-      size={mapaTamanhoBotao[size]}
-      disabled={disabled || loading}
-      className={cn('gap-2', className)}
-      {...props}
-    >
-      {loading && <Spinner className="size-3.5" />}
-      {children}
-    </BotaoShadcn>
-  )
-}
+}: BotaoLegadoProps) {
+  const variante = mapaBotao[variant]
 
-interface CampoInputProps extends ComponentProps<typeof InputShadcn> {
-  label?: string
-  hint?: string
-  error?: string
-}
-
-/** Input com label e mensagens de erro/dica */
-export function Input({ label, hint, error, className, id, ...props }: CampoInputProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
-  return (
-    <div className="flex flex-col gap-1.5">
-      {label && <Label htmlFor={inputId}>{label}</Label>}
-      <InputShadcn id={inputId} aria-invalid={!!error} className={className} {...props} />
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  )
-}
-
-interface CampoTextareaProps extends ComponentProps<typeof TextareaShadcn> {
-  label?: string
-  error?: string
-}
-
-export function Textarea({ label, error, className, id, ...props }: CampoTextareaProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
-  return (
-    <div className="flex flex-col gap-1.5">
-      {label && <Label htmlFor={inputId}>{label}</Label>}
-      <TextareaShadcn id={inputId} aria-invalid={!!error} className={className} {...props} />
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  )
-}
-
-type VarianteBadge = 'default' | 'info' | 'warning' | 'danger' | 'success' | 'dev'
-
-interface BadgeProps {
-  variant?: VarianteBadge
-  children: ReactNode
-  className?: string
-}
-
-export function Badge({ variant = 'default', children, className }: BadgeProps) {
-  const estilos: Record<VarianteBadge, string> = {
-    default: '',
-    info: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300',
-    danger: '',
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300',
-    dev: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300',
+  if (render && isValidElement(render)) {
+    const el = render as ReactElement<{ className?: string; children?: ReactNode }>
+    return cloneElement(el, {
+      className: cn(
+        'vig-btn relative inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200',
+        variante === 'primario' && 'bg-[var(--vig-navy)] text-white border border-[var(--vig-navy)]',
+        variante === 'secundario' &&
+          'bg-[var(--color-surface)] text-[var(--vig-navy)] border border-[var(--color-border)]',
+        variante === 'fantasma' && 'bg-transparent text-[var(--vig-navy)]',
+        variante === 'perigo' && 'bg-[#b42318] text-white border border-[#b42318]',
+        size === 'sm' && 'h-8 px-3 text-xs gap-1.5',
+        size === 'md' && 'h-10 px-5 text-sm gap-2',
+        size === 'lg' && 'h-12 px-7 text-sm gap-2.5',
+        className,
+        el.props.className,
+      ),
+      children: (
+        <>
+          {loading && <span className="vig-btn-spinner" aria-hidden />}
+          {children}
+        </>
+      ),
+    })
   }
 
-  const varianteShadcn =
-    variant === 'danger' ? 'destructive' : variant === 'default' ? 'secondary' : 'outline'
-
   return (
-    <BadgeShadcn variant={varianteShadcn} className={cn(estilos[variant], className)}>
-      {children}
-    </BadgeShadcn>
+    <Botao
+      variante={variante}
+      tamanho={size}
+      carregando={loading}
+      className={className}
+      filho={children}
+      {...props}
+    />
   )
 }
 
-/** Avatar com iniciais do nome */
-export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
-  const tamanho = size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'default'
+/** @deprecated Preferir `Campo` */
+export const Input = Campo
+
+/** @deprecated Preferir `AreaTexto` */
+export const Textarea = AreaTexto
+
+/** @deprecated Preferir `Selo` */
+export const Badge = Selo
+
+/** @deprecated Preferir `AvatarVig`. Sem `url`, não renderiza nada. */
+export function Avatar({
+  name,
+  nome,
+  url,
+  size = 'md',
+}: {
+  name?: string
+  nome?: string
+  url?: string | null
+  size?: 'sm' | 'md' | 'lg'
+}) {
+  return <AvatarVig nome={nome ?? name ?? '?'} url={url} tamanho={size} />
+}
+
+export function Label({ children, htmlFor, className }: { children: ReactNode; htmlFor?: string; className?: string }) {
   return (
-    <AvatarShadcn size={tamanho}>
-      <AvatarFallback>{obterIniciais(name)}</AvatarFallback>
-    </AvatarShadcn>
+    <label htmlFor={htmlFor} className={cn('vig-campo-rotulo', className)}>
+      {children}
+    </label>
   )
+}
+
+export function Separator({ className }: { className?: string }) {
+  return <hr className={cn('vig-separador', className)} />
+}
+
+export function Divider(props: { className?: string }) {
+  return <Separator {...props} />
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <SkeletonShadcn className={className} />
+  return <div className={cn('vig-esqueleto', className)} aria-hidden />
 }
 
-/** Estado vazio com Card shadcn */
+export function Spinner({ className }: { className?: string }) {
+  return <span className={cn('vig-btn-spinner vig-btn-spinner--solo', className)} aria-hidden />
+}
+
+/** Card legado → Cartao VIGMED */
+export function Card({
+  children,
+  className,
+  titulo,
+  descricao,
+}: {
+  children: ReactNode
+  className?: string
+  titulo?: string
+  descricao?: string
+}) {
+  return (
+    <Cartao titulo={titulo} descricao={descricao} className={className}>
+      {children}
+    </Cartao>
+  )
+}
+
+export function CardContent({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={className}>{children}</div>
+}
+
+export function CardHeader({ children, className }: { children: ReactNode; className?: string }) {
+  return <header className={cn('mb-4 pb-3 border-b border-[var(--color-border)]', className)}>{children}</header>
+}
+
+export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return <h3 className={cn('text-base font-semibold text-[var(--vig-navy)]', className)}>{children}</h3>
+}
+
+export function CardDescription({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cn('text-xs text-[var(--color-text-3)] mt-1', className)}>{children}</p>
+}
+
+export function CardFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return <footer className={cn('mt-4 pt-3 border-t border-[var(--color-border)]', className)}>{children}</footer>
+}
+
+export function CardAction({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
+
 export function Empty({
-  icon,
   title,
   description,
   action,
@@ -178,24 +187,68 @@ export function Empty({
   description?: string
   action?: ReactNode
 }) {
+  return <Vazio titulo={title} descricao={description} acao={action} />
+}
+
+/** Dialog compat, renderiza Modal VIGMED com overlay */
+const DialogCtx = createContext<{ aberto: boolean; onOpenChange?: (aberto: boolean) => void }>({
+  aberto: false,
+})
+
+export function Dialog({
+  open,
+  onOpenChange,
+  children,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: ReactNode
+}) {
   return (
-    <Card className="surface-card border-dashed border-[var(--glass-border)] bg-transparent shadow-none">
-      <CardContent className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        {icon && (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-surface-3)] text-[var(--color-text-2)]">
-            {icon}
-          </div>
-        )}
-        <p className="text-sm font-semibold text-[var(--color-text-1)]">{title}</p>
-        {description && (
-          <p className="max-w-sm text-sm text-[var(--color-text-2)] leading-relaxed">{description}</p>
-        )}
-        {action && <div className="mt-2">{action}</div>}
-      </CardContent>
-    </Card>
+    <DialogCtx.Provider value={{ aberto: !!open, onOpenChange }}>
+      {children}
+    </DialogCtx.Provider>
   )
 }
 
-export function Divider({ className }: { className?: string }) {
-  return <Separator className={className} />
+export function DialogContent({
+  children,
+  className,
+  showCloseButton: _showCloseButton,
+}: {
+  children: ReactNode
+  className?: string
+  showCloseButton?: boolean
+}) {
+  const { aberto, onOpenChange } = useContext(DialogCtx)
+  if (!aberto) return null
+  return (
+    <Modal aberto={aberto} onFechar={() => onOpenChange?.(false)} className={className}>
+      {children}
+    </Modal>
+  )
+}
+
+export function DialogHeader({ children, className }: { children: ReactNode; className?: string }) {
+  return <header className={cn('vig-modal-cabecalho border-0 pb-0', className)}>{children}</header>
+}
+
+export function DialogTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return <h2 className={cn('vig-modal-titulo', className)}>{children}</h2>
+}
+
+export function DialogDescription({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cn('vig-modal-descricao', className)}>{children}</p>
+}
+
+export function DialogFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return <footer className={cn('vig-modal-rodape', className)}>{children}</footer>
+}
+
+export function DialogTrigger({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
+
+export function DialogClose({ children }: { children: ReactNode }) {
+  return <>{children}</>
 }

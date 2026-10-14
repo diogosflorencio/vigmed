@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { obterPerfilAtual, ehAdministrador, ehUsuarioEmpresa } from '@/lib/auth/sessao'
 import { CascaApp } from '@/components/layout/CascaApp'
 import { caminhoEntrar } from '@/lib/rotas'
-import { contarMensagensNaoLidas } from '@/lib/mensagens/acoes'
+import { obterNotificacoesPainelCached } from '@/lib/painel/notificacoes-cache'
 import type { AmbienteApp } from '@/lib/ambiente'
 
 type AmbientePainel = Extract<AmbienteApp, 'adm' | 'docs'>
@@ -25,10 +25,10 @@ export async function LayoutPainelProtegido({ ambiente, children }: Props) {
     redirect(caminhoEntrar())
   }
 
-  const { total: mensagensNaoLidas } = await contarMensagensNaoLidas()
+  const notificacoes = await obterNotificacoesPainelCached(ambiente, perfil.id)
 
   return (
-    <CascaApp ambiente={ambiente} perfil={perfil} mensagensNaoLidas={mensagensNaoLidas}>
+    <CascaApp ambiente={ambiente} perfil={perfil} notificacoes={notificacoes}>
       {children}
     </CascaApp>
   )

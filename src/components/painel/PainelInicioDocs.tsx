@@ -1,11 +1,22 @@
 import Link from 'next/link'
 import { ROTAS, hrefPublico } from '@/lib/rotas'
-import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
-import { SecaoPainel, CartaoPainel } from '@/components/layout/SecaoPainel'
+import { SecaoPainel } from '@/components/layout/SecaoPainel'
+import { BannerPainel } from '@/components/painel/BannerPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { IconeAnimado } from '@/components/ui/icone-animado'
-import { Button } from '@/components/ui'
-import { formatarDataHora } from '@/lib/utils'
+import { Cartao } from '@/components/vig/Cartao'
+import { Metrica } from '@/components/vig/Metrica'
+import { Botao } from '@/components/vig/Botao'
+import { Selo } from '@/components/vig/Selo'
+import { formatarBytes, formatarData, formatarDataHora } from '@/lib/utils'
+import type { AlertaValidadeDocumento } from '@/lib/documentos/acoes'
+
+interface ComunicadoResumo {
+  id: string
+  titulo: string
+  publicado_em: string
+  lido: boolean
+  prioridade: string
+}
 
 interface Props {
   primeiroNome: string
@@ -18,6 +29,30 @@ interface Props {
     criado_em: string
     nome_arquivo?: string
   }[]
+  alertasValidade: AlertaValidadeDocumento[]
+  conversaNaoLidaId: string | null
+  comunicadosRecentes: ComunicadoResumo[]
+  cota: { usado: number; limite: number } | null
+}
+
+function linkDocumento(id: string) {
+  return `${hrefPublico(ROTAS.docs.documentos)}?doc=${id}`
+}
+
+function linkComunicado(id: string) {
+  return `${hrefPublico(ROTAS.docs.comunicados)}?comunicado=${id}`
+}
+
+function linkMensagens(conversaId: string | null) {
+  const base = hrefPublico(ROTAS.docs.mensagens)
+  return conversaId ? `${base}?conversa=${conversaId}` : base
+}
+
+const PRIORIDADE: Record<string, 'erro' | 'alerta' | 'padrao' | 'teal'> = {
+  urgente: 'erro',
+  alta: 'alerta',
+  normal: 'padrao',
+  baixa: 'teal',
 }
 
 export function PainelInicioDocs({
@@ -26,78 +61,247 @@ export function PainelInicioDocs({
   comunicadosNaoLidos,
   mensagensNovas,
   documentosRecentes,
+  alertasValidade,
+  conversaNaoLidaId,
+  comunicadosRecentes,
+  cota,
 }: Props) {
+  const temPendencias =
+    comunicadosNaoLidos > 0 || mensagensNovas > 0 || alertasValidade.length > 0
+
+  const pctCota =
+    cota && cota.limite > 0 ? Math.min((cota.usado / cota.limite) * 100, 100) : null
+
+  const chips = [
+    {
+      rotulo: 'documentos',
+      valor: totalDocumentos,
+      tom: 'neutro' as const,
+      href: hrefPublico(ROTAS.docs.documentos),
+    },
+  ]
+  if (comunicadosNaoLidos > 0) {
+    chips.push({
+      rotulo: comunicadosNaoLidos === 1 ? 'comunicado novo' : 'comunicados novos',
+      valor: comunicadosNaoLidos,
+      tom: 'sinal',
+      href: hrefPublico(ROTAS.docs.comunicados),
+    })
+  }
+  if (mensagensNovas > 0) {
+    chips.push({
+      rotulo: mensagensNovas === 1 ? 'mensagem nova' : 'mensagens novas',
+      valor: mensagensNovas,
+      tom: 'sinal',
+      href: linkMensagens(conversaNaoLidaId),
+    })
+  }
+  if (alertasValidade.length > 0) {
+    chips.push({
+      rotulo: alertasValidade.length === 1 ? 'alerta de validade' : 'alertas de validade',
+      valor: alertasValidade.length,
+      tom: 'alerta',
+      href: hrefPublico(ROTAS.docs.documentos),
+    })
+  }
+
   return (
     <SecaoPainel>
-      <CabecalhoPagina
-        titulo={`Olá, ${primeiroNome}`}
-        descricao="Resumo das suas atividades."
-      />
-
       <RevelarScroll>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { rotulo: 'Documentos', valor: totalDocumentos, icone: 'file-text' as const },
-            { rotulo: 'Comunicados não lidos', valor: comunicadosNaoLidos, icone: 'megaphone' as const },
-            { rotulo: 'Mensagens novas', valor: mensagensNovas, icone: 'message' as const },
-          ].map((m) => (
-            <div key={m.rotulo} className="metrica-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.55rem' }}>
-              <div className="metrica-icone">
-                <IconeAnimado nome={m.icone} tamanho={16} />
+        <BannerPainel
+          kicker="Portal empresas"
+          titulo={`Olá, ${primeiroNome}.`}
+          texto={
+            temPendencias
+              ? 'Há itens aguardando sua atenção. Revise comunicados, mensagens e documentos com validade próxima.'
+              : 'Tudo em dia por aqui. Consulte documentos, comunicados e mensagens da sua empresa quando precisar.'
+          }
+          chips={chips}
+          cta={
+            temPendencias
+              ? {
+                  rotulo:
+                    comunicadosNaoLidos > 0
+                      ? 'Ver comunicados'
+                      : mensagensNovas > 0
+                        ? 'Abrir mensagens'
+                        : 'Ver documentos',
+                  href:
+                    comunicadosNaoLidos > 0
+                      ? hrefPublico(ROTAS.docs.comunicados)
+                      : mensagensNovas > 0
+                        ? linkMensagens(conversaNaoLidaId)
+                        : hrefPublico(ROTAS.docs.documentos),
+                }
+              : { rotulo: 'Ir para documentos', href: hrefPublico(ROTAS.docs.documentos) }
+          }
+        />
+      </RevelarScroll>
+
+      {pctCota != null && (
+        <RevelarScroll atraso={0.02}>
+          <Cartao titulo="Armazenamento" descricao="Espaço usado por arquivos enviados pela sua empresa.">
+            <div className="vig-dashboard-detalhe">
+              <p>
+                Uso da cota: <strong>{Math.round(pctCota)}%</strong> ({formatarBytes(cota!.usado)} de{' '}
+                {formatarBytes(cota!.limite)})
+              </p>
+              <div className="vig-barra-progresso mt-2">
+                <div
+                  className={`vig-barra-progresso-fill${pctCota >= 90 ? ' vig-barra-progresso-fill--alerta' : ''}`}
+                  style={{ width: `${pctCota}%` }}
+                />
               </div>
-              <div>
-                <p className="metrica-valor">{m.valor}</p>
-                <p className="metrica-titulo">{m.rotulo}</p>
-              </div>
+              {pctCota >= 90 && (
+                <p className="vig-dashboard-detalhe-sub text-(--color-danger) mt-2">
+                  Cota quase esgotada: remova arquivos antigos ou fale com a VIGMED.
+                </p>
+              )}
             </div>
-          ))}
+          </Cartao>
+        </RevelarScroll>
+      )}
+
+      <RevelarScroll atraso={0.04}>
+        <div className="vig-metrica-grid vig-metrica-grid--4">
+          <Metrica
+            rotulo="Documentos"
+            valor={totalDocumentos}
+            destaque={totalDocumentos > 0}
+          />
+          <Metrica
+            rotulo="Comunicados não lidos"
+            valor={comunicadosNaoLidos}
+            destaque={comunicadosNaoLidos > 0}
+          />
+          <Metrica
+            rotulo="Mensagens novas"
+            valor={mensagensNovas}
+            destaque={mensagensNovas > 0}
+          />
+          <Metrica
+            rotulo="Docs a vencer"
+            valor={alertasValidade.length}
+            destaque={alertasValidade.length > 0}
+          />
         </div>
       </RevelarScroll>
 
-      <RevelarScroll atraso={0.05}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--color-border)', borderRadius: '0.75rem', overflow: 'hidden' }}>
-          <Link href={hrefPublico(ROTAS.docs.documentos)} style={{ display: 'block', padding: '0.9rem 1rem', background: 'var(--color-surface)', textDecoration: 'none', transition: 'background 0.15s' }}
-            className="hover:bg-(--color-surface-2)">
-            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-1)' }}>Documentos</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', marginTop: '0.2rem' }}>Enviar e baixar arquivos da empresa</p>
+      {temPendencias && (
+        <RevelarScroll atraso={0.06}>
+          <Cartao titulo="Pendências" descricao="Itens que precisam da sua atenção.">
+            <ul className="vig-lista-pendencias">
+              {comunicadosNaoLidos > 0 && (
+                <li>
+                  <Link
+                    href={`${hrefPublico(ROTAS.docs.comunicados)}?filtro=nao-lidos`}
+                    className="vig-lista-pendencias-item"
+                  >
+                    <span>
+                      {comunicadosNaoLidos} comunicado{comunicadosNaoLidos > 1 ? 's' : ''} não lido
+                      {comunicadosNaoLidos > 1 ? 's' : ''}
+                    </span>
+                    <Selo variante="alerta">Ver</Selo>
+                  </Link>
+                </li>
+              )}
+              {mensagensNovas > 0 && (
+                <li>
+                  <Link href={linkMensagens(conversaNaoLidaId)} className="vig-lista-pendencias-item">
+                    <span>
+                      {mensagensNovas} mensagem{mensagensNovas > 1 ? 'ens' : ''} nova
+                      {mensagensNovas > 1 ? 's' : ''}
+                    </span>
+                    <Selo variante="teal">Abrir chat</Selo>
+                  </Link>
+                </li>
+              )}
+              {alertasValidade.map((doc) => (
+                <li key={doc.id}>
+                  <Link href={linkDocumento(doc.id)} className="vig-lista-pendencias-item">
+                    <span>
+                      {doc.titulo}: {doc.status === 'vencido' ? 'vencido' : 'vence'} em{' '}
+                      {formatarData(doc.valido_ate)}
+                    </span>
+                    <Selo variante={doc.status === 'vencido' ? 'erro' : 'alerta'}>
+                      {doc.status === 'vencido' ? 'Vencido' : 'Atenção'}
+                    </Selo>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Cartao>
+        </RevelarScroll>
+      )}
+
+      <RevelarScroll atraso={0.08}>
+        <div className="vig-acesso-rapido">
+          <Link href={hrefPublico(ROTAS.docs.documentos)} className="vig-acesso-item">
+            <strong>Documentos</strong>
+            <span>Enviar e baixar arquivos da empresa</span>
           </Link>
-          <Link href={hrefPublico(ROTAS.docs.comunicados)} style={{ display: 'block', padding: '0.9rem 1rem', background: 'var(--color-surface)', textDecoration: 'none', transition: 'background 0.15s' }}
-            className="hover:bg-(--color-surface-2)">
-            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-1)' }}>Comunicados</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-3)', marginTop: '0.2rem' }}>Avisos da administração</p>
+          <Link href={hrefPublico(ROTAS.docs.comunicados)} className="vig-acesso-item">
+            <strong>Comunicados</strong>
+            <span>Avisos da administração</span>
+          </Link>
+          <Link href={hrefPublico(ROTAS.docs.mensagens)} className="vig-acesso-item">
+            <strong>Mensagens</strong>
+            <span>Conversas com a equipe VIGMED</span>
           </Link>
         </div>
       </RevelarScroll>
 
-      <RevelarScroll atraso={0.09}>
-        <CartaoPainel titulo="Recentes">
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {comunicadosRecentes.length > 0 && (
+        <RevelarScroll atraso={0.1}>
+          <Cartao titulo="Comunicados recentes" descricao="Últimos avisos publicados pela VIGMED.">
+            <div className="vig-lista-docs">
+              {comunicadosRecentes.map((c) => (
+                <Link key={c.id} href={linkComunicado(c.id)} className="vig-lista-docs-item">
+                  <div className="vig-lista-docs-texto">
+                    <p>{c.titulo}</p>
+                    <span>{formatarDataHora(c.publicado_em)}</span>
+                  </div>
+                  <div className="flex gap-2 shrink-0 ml-2">
+                    {!c.lido && <Selo variante="alerta">Novo</Selo>}
+                    <Selo variante={PRIORIDADE[c.prioridade] ?? 'padrao'}>{c.prioridade}</Selo>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Botao
+              href={hrefPublico(ROTAS.docs.comunicados)}
+              variante="fantasma"
+              tamanho="sm"
+              className="w-full mt-3"
+              filho="Ver todos"
+            />
+          </Cartao>
+        </RevelarScroll>
+      )}
+
+      <RevelarScroll atraso={0.12}>
+        <Cartao titulo="Documentos recentes" descricao="Últimos arquivos disponíveis no portal.">
+          <div className="vig-lista-docs">
             {documentosRecentes.map((doc) => (
-              <Link
-                key={doc.id}
-                href={hrefPublico(ROTAS.docs.documentos)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0', borderBottom: '1px solid var(--color-border)', textDecoration: 'none', transition: 'opacity 0.15s' }}
-                className="last:border-0 hover:opacity-75"
-              >
-                <IconeAnimado nome="file-text" tamanho={13} className="shrink-0 text-(--color-text-3)" />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {doc.titulo}
-                  </p>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--color-text-3)' }}>{formatarDataHora(doc.criado_em)}</p>
+              <Link key={doc.id} href={linkDocumento(doc.id)} className="vig-lista-docs-item">
+                <div className="vig-lista-docs-texto">
+                  <p>{doc.titulo}</p>
+                  <span>{formatarDataHora(doc.criado_em)}</span>
                 </div>
               </Link>
             ))}
             {documentosRecentes.length === 0 && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-3)', padding: '0.75rem 0', textAlign: 'center' }}>
-                Nenhum documento recente.
-              </p>
+              <p className="vig-lista-docs-vazio">Nenhum documento recente.</p>
             )}
           </div>
-          <Button variant="ghost" size="sm" className="mt-2 w-full h-7 text-xs" render={<Link href={hrefPublico(ROTAS.docs.documentos)} />}>
-            Ver todos
-          </Button>
-        </CartaoPainel>
+          <Botao
+            href={hrefPublico(ROTAS.docs.documentos)}
+            variante="fantasma"
+            tamanho="sm"
+            className="w-full mt-3"
+            filho="Ver todos"
+          />
+        </Cartao>
       </RevelarScroll>
     </SecaoPainel>
   )

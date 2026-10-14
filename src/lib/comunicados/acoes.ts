@@ -154,17 +154,37 @@ export async function publicarComunicado(dados: {
 
   await sincronizarEmpresas(comunicado.id, dados.paraTodos, dados.empresaIds)
 
+  let emailEnviado = false
+  if (!dados.rascunho) {
+    const { obterValorConfiguracao } = await import('@/lib/configuracoes/acoes')
+    const emailAuto = await obterValorConfiguracao<boolean>('email_comunicado_automatico', false)
+    if (emailAuto) {
+      const { notificarComunicadoPublicado } = await import('@/lib/email/comunicados')
+      const notificacao = await notificarComunicadoPublicado({
+        comunicadoId: comunicado.id,
+        titulo: dados.titulo.trim(),
+        corpo: dados.corpo,
+        prioridade: dados.prioridade,
+        paraTodos: dados.paraTodos,
+      })
+      emailEnviado = notificacao.enviado
+      if (!notificacao.enviado && notificacao.motivo) {
+        console.warn('[publicarComunicado] e-mail:', notificacao.motivo)
+      }
+    }
+  }
+
   await registrarAuditoria({
     acao: 'criacao',
     usuarioId: perfil.id,
     recurso: 'comunicado',
     recursoId: comunicado.id,
-    detalhes: { titulo: dados.titulo, rascunho: dados.rascunho },
+    detalhes: { titulo: dados.titulo, rascunho: dados.rascunho, emailEnviado },
   })
 
   revalidatePath(ROTAS.adm.comunicados)
   revalidatePath(ROTAS.docs.comunicados)
-  return { sucesso: true }
+  return { sucesso: true, emailEnviado }
 }
 
 export async function atualizarComunicado(dados: {
@@ -185,34 +205,63 @@ export async function atualizarComunicado(dados: {
 
   const admin = criarClienteSupabaseAdmin()
 
-  const { error } = await admin
+  const { data: existente } = await admin
     .from('comunicados')
-    .update({
-      titulo: dados.titulo.trim(),
-      corpo: dados.corpo,
-      prioridade: dados.prioridade,
-      para_todos: dados.paraTodos,
-      fixado: dados.fixado ?? false,
-      ativo: !dados.rascunho,
-      metadados: dados.rascunho ? { rascunho: true } : {},
-    })
+    .select('ativo, metadados')
     .eq('id', dados.id)
+    .maybeSingle()
+
+  const eraRascunho =
+    !existente?.ativo || Boolean((existente?.metadados as { rascunho?: boolean })?.rascunho)
+
+  const agora = new Date().toISOString()
+  const payloadUpdate: Record<string, unknown> = {
+    titulo: dados.titulo.trim(),
+    corpo: dados.corpo,
+    prioridade: dados.prioridade,
+    para_todos: dados.paraTodos,
+    fixado: dados.fixado ?? false,
+    ativo: !dados.rascunho,
+    metadados: dados.rascunho ? { rascunho: true } : {},
+  }
+  if (!dados.rascunho && eraRascunho) {
+    payloadUpdate.publicado_em = agora
+  }
+
+  const { error } = await admin.from('comunicados').update(payloadUpdate).eq('id', dados.id)
 
   if (error) return { erro: 'Não foi possível atualizar o comunicado.' }
 
   await sincronizarEmpresas(dados.id, dados.paraTodos, dados.empresaIds)
+
+  let emailEnviado = false
+  if (!dados.rascunho && eraRascunho) {
+    const { obterValorConfiguracao } = await import('@/lib/configuracoes/acoes')
+    const emailAuto = await obterValorConfiguracao<boolean>('email_comunicado_automatico', false)
+    if (emailAuto) {
+      const { notificarComunicadoPublicado } = await import('@/lib/email/comunicados')
+      const notificacao = await notificarComunicadoPublicado({
+        comunicadoId: dados.id,
+        titulo: dados.titulo.trim(),
+        corpo: dados.corpo,
+        prioridade: dados.prioridade,
+        paraTodos: dados.paraTodos,
+      })
+      emailEnviado = notificacao.enviado
+    }
+  }
 
   await registrarAuditoria({
     acao: 'atualizacao',
     usuarioId: perfil.id,
     recurso: 'comunicado',
     recursoId: dados.id,
-    detalhes: { titulo: dados.titulo, rascunho: dados.rascunho },
+    detalhes: { titulo: dados.titulo, rascunho: dados.rascunho, emailEnviado, publicado: !dados.rascunho && eraRascunho },
   })
 
   revalidatePath(ROTAS.adm.comunicados)
   revalidatePath(ROTAS.docs.comunicados)
-  return { sucesso: true }
+  return { sucesso: true, emailEnviado }
 }
 
 export async function excluirComunicado(comunicadoId: string) {

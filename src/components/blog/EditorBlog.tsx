@@ -137,7 +137,7 @@ export function EditorBlog({ conteudo, onChange, postId, onPostId, className }: 
   if (!editor) return null
 
   return (
-    <div className={cn('surface-card overflow-hidden flex flex-col', className)}>
+    <div className={cn('vig-card vig-editor overflow-hidden flex flex-col rounded-2xl border border-[var(--color-border)]', className)}>
       <div className="flex flex-wrap items-center gap-1 border-b border-[var(--glass-border)] p-2">
         <BotaoBarra ativo={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} titulo="Negrito">
           <Bold size={16} />

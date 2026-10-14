@@ -121,11 +121,21 @@ export async function convidarUsuario(dados: DadosConvite) {
   revalidatePath(ROTAS.docs.usuarios)
   if (empresaId) revalidatePath(ROTAS.adm.empresa(empresaId))
 
+  const linkAtivacao = `/cadastro?email=${encodeURIComponent(email)}`
+  const { notificarConviteCriado } = await import('@/lib/email/convites')
+  const emailResult = await notificarConviteCriado({
+    email,
+    nome: dados.nomeCompleto?.trim(),
+    ambiente: dados.ambiente,
+    linkRelativo: linkAtivacao,
+  })
+
   return {
     sucesso: true,
     mensagem: 'E-mail autorizado. O convidado pode criar a conta em /cadastro e entrar.',
     convite,
-    linkAtivacao: `/cadastro?email=${encodeURIComponent(email)}`,
+    linkAtivacao,
+    emailEnviado: emailResult.enviado,
   }
 }
 
@@ -267,6 +277,107 @@ export async function excluirUsuarioCompleto(usuarioId: string) {
     sucesso: true,
     mensagem: `Usuário excluído${documentos?.length ? ` e ${documentos.length} arquivo(s) relacionados removido(s)` : ''}.`,
   }
+}
+
+/** Reenvia e-mail de convite pendente (Resend). */
+export async function reenviarEmailConvite(conviteId: string) {
+  const perfil = await exigirAutenticacao(['administrador', 'administrador_empresa'])
+  const admin = criarClienteSupabaseAdmin()
+
+  const { data: convite } = await admin
+    .from('convites_acesso')
+    .select('id, email, nome_completo, ambiente, usado_em, empresa_id')
+    .eq('id', conviteId)
+    .maybeSingle()
+
+  if (!convite) return { erro: 'Convite não encontrado.' }
+  if (convite.usado_em) return { erro: 'Este convite já foi utilizado.' }
+
+  if (perfil.papel === 'administrador_empresa') {
+    if (convite.ambiente !== 'docs' || convite.empresa_id !== perfil.empresa_id) {
+      return { erro: 'Sem permissão para reenviar este convite.' }
+    }
+  }
+
+  const linkAtivacao = `/cadastro?email=${encodeURIComponent(convite.email)}`
+  const { notificarConviteCriado } = await import('@/lib/email/convites')
+  const resultado = await notificarConviteCriado({
+    email: convite.email,
+    nome: convite.nome_completo || undefined,
+    ambiente: convite.ambiente as AmbienteConvite,
+    linkRelativo: linkAtivacao,
+  })
+
+  if (!resultado.enviado) {
+    return { erro: resultado.motivo ?? 'Não foi possível enviar o e-mail. Verifique RESEND_API_KEY.' }
+  }
+
+  return { sucesso: true }
+}
+
+/** Ativa ou desativa conta sem excluir (admin global). */
+export async function alternarStatusUsuario(usuarioId: string) {
+  const perfil = await exigirAutenticacao(['administrador'])
+
+  if (usuarioId === perfil.id) {
+    return { erro: 'Você não pode desativar a própria conta.' }
+  }
+
+  const admin = criarClienteSupabaseAdmin()
+  const { data: alvo } = await admin
+    .from('perfis')
+    .select('id, email, ativo, papel, empresa_id')
+    .eq('id', usuarioId)
+    .maybeSingle()
+
+  if (!alvo) return { erro: 'Usuário não encontrado.' }
+
+  if (alvo.ativo && alvo.papel === 'administrador_empresa' && alvo.empresa_id) {
+    const { count: outrosAdmins } = await admin
+      .from('perfis')
+      .select('id', { count: 'exact', head: true })
+      .eq('empresa_id', alvo.empresa_id)
+      .eq('papel', 'administrador_empresa')
+      .eq('ativo', true)
+      .neq('id', usuarioId)
+
+    if ((outrosAdmins ?? 0) === 0) {
+      return {
+        erro:
+          'Não é possível desativar o único administrador da empresa. Promova outro usuário antes.',
+      }
+    }
+  }
+
+  const novoStatus = !alvo.ativo
+  const { error } = await admin.from('perfis').update({ ativo: novoStatus }).eq('id', usuarioId)
+  if (error) return { erro: 'Não foi possível atualizar o status.' }
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    empresaId: alvo.empresa_id ?? undefined,
+    recurso: 'usuario',
+    recursoId: usuarioId,
+    detalhes: { email: alvo.email, ativo: novoStatus },
+  })
+
+  revalidatePath(ROTAS.adm.usuarios)
+  revalidatePath(ROTAS.docs.usuarios)
+  if (alvo.empresa_id) revalidatePath(ROTAS.adm.empresa(alvo.empresa_id))
+
+  return { sucesso: true, ativo: novoStatus }
+}
+
+/** Contagem de convites aguardando aceite (admin). */
+export async function contarConvitesPendentes(): Promise<number> {
+  await exigirAutenticacao(['administrador'])
+  const admin = criarClienteSupabaseAdmin()
+  const { count } = await admin
+    .from('convites_acesso')
+    .select('*', { count: 'exact', head: true })
+    .is('usado_em', null)
+  return count ?? 0
 }
 
 /** Lista convites pendentes e usuários (admin global) */

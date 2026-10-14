@@ -6,8 +6,10 @@ import { usePathname } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { IconeAnimado } from '@/components/ui/icone-animado'
 import { MenuAcoesUsuario } from '@/components/layout/menu/MenuAcoesUsuario'
+import { BotaoPaletaComando } from '@/components/layout/BotaoPaletaComando'
 import { PipulaDock } from '@/components/layout/menu/PipulaDock'
-import { useMensagensNaoLidas } from '@/contexts/MensagensNaoLidasContext'
+import { useNotificacoesPortal } from '@/contexts/NotificacoesPortalContext'
+import { badgeDoHref } from '@/lib/navegacao-badge'
 import type { NomeIcone } from '@/lib/icones-animados'
 import type { ItemNavegacao } from '@/lib/navegacao'
 import { listarAreas } from '@/lib/navegacao-menu'
@@ -132,14 +134,10 @@ function ItemDock({ href, rotulo, icone, ativo, aoClicar, externo, comRotulo, ba
   )
 }
 
-function ehHrefMensagens(href: string) {
-  return href.includes('/mensagens') || href === '/mensagens'
-}
-
 /** Dock inferior: desktop e mobile em linha; no mobile overflow-x com seta de slider */
 export function MenuDock({ itens, ambiente, perfil }: Props) {
   const caminho = usePathname()
-  const { total: mensagensNaoLidas } = useMensagensNaoLidas()
+  const notificacoes = useNotificacoesPortal()
   const areas = listarAreas(itens)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [podeEsquerda, definirPodeEsquerda] = useState(false)
@@ -209,11 +207,13 @@ export function MenuDock({ itens, ambiente, perfil }: Props) {
                 icone={item.icone}
                 ativo={caminho.startsWith(item.href)}
                 externo={item.externo}
-                badge={ehHrefMensagens(item.href) ? mensagensNaoLidas : 0}
+                comRotulo
+                badge={badgeDoHref(item.href, notificacoes)}
               />
             ))}
           </div>
           <span className="menu-dock-separador" aria-hidden />
+          <BotaoPaletaComando compacto />
           <MenuAcoesUsuario ambiente={ambiente} perfil={perfil} compacto noDock />
         </div>
       </nav>
@@ -246,7 +246,7 @@ export function MenuDock({ itens, ambiente, perfil }: Props) {
                   ativo={caminho.startsWith(item.href)}
                   externo={item.externo}
                   comRotulo
-                  badge={ehHrefMensagens(item.href) ? mensagensNaoLidas : 0}
+                  badge={badgeDoHref(item.href, notificacoes)}
                 />
               ))}
             </div>

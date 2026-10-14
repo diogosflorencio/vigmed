@@ -1,14 +1,7 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/index'
+import { createPortal } from 'react-dom'
+import { Botao } from '@/components/vig/Botao'
 
 interface ConfirmProps {
   open: boolean
@@ -20,7 +13,7 @@ interface ConfirmProps {
   loading?: boolean
 }
 
-/** Diálogo de confirmação baseado no Dialog do shadcn */
+/** Confirmação em barra fixa na tela (sem modal). */
 export function Confirm({
   open,
   onClose,
@@ -30,22 +23,19 @@ export function Confirm({
   confirmLabel = 'Confirmar',
   loading,
 }: ConfirmProps) {
-  return (
-    <Dialog open={open} onOpenChange={(estaAberto) => !estaAberto && onClose()}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{message}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="border-0 bg-transparent p-0 pt-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button variant="danger" onClick={onConfirm} loading={loading}>
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  if (!open || typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="vm-confirm-barra" role="alertdialog" aria-modal="true" aria-labelledby="vm-confirm-titulo">
+      <div className="vm-confirm-texto">
+        <strong id="vm-confirm-titulo">{title}</strong>
+        <p>{message}</p>
+      </div>
+      <div className="vm-confirm-acoes">
+        <Botao variante="fantasma" onClick={onClose} filho="Cancelar" />
+        <Botao variante="perigo" carregando={loading} onClick={onConfirm} filho={confirmLabel} />
+      </div>
+    </div>,
+    document.body,
   )
 }

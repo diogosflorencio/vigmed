@@ -413,3 +413,12 @@ export async function garantirConversaEmpresa(empresaId: string) {
   revalidarMensagens()
   return { conversaId: data.id }
 }
+
+/** Primeira conversa com mensagens não lidas (para deep links no dashboard). */
+export async function obterPrimeiraConversaNaoLida(): Promise<string | null> {
+  const { conversas } = await listarConversas()
+  const comNaoLidas = conversas
+    .filter((c) => c.nao_lidas > 0)
+    .sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em))
+  return comNaoLidas[0]?.id ?? null
+}

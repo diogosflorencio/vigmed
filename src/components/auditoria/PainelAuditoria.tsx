@@ -2,12 +2,13 @@
 
 import { Fragment, useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CalendarRange, ChevronDown, ChevronUp, Download, Search, Shield, X } from 'lucide-react'
+import { CalendarRange, ChevronDown, ChevronUp, Search, Shield, X } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { Button } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { Vazio } from '@/components/vig/Vazio'
 import { listarAuditoriaParaExportacao, type RegistroAuditoria } from '@/lib/auditoria/acoes'
 import { hrefPublico, ROTAS } from '@/lib/rotas'
 import { cn, formatarData, formatarDataHora } from '@/lib/utils'
@@ -27,10 +28,11 @@ interface Props {
 
 const ACOES_FILTRO = [
   { valor: '', rotulo: 'Todos' },
-  { valor: 'login', rotulo: 'Login' },
   { valor: 'download', rotulo: 'Download' },
   { valor: 'envio', rotulo: 'Upload' },
   { valor: 'exclusao', rotulo: 'Exclusão' },
+  { valor: 'atualizacao', rotulo: 'Atualização' },
+  { valor: 'criacao', rotulo: 'Criação' },
   { valor: 'criacao_empresa', rotulo: 'Empresa' },
   { valor: 'criacao_usuario', rotulo: 'Pessoas' },
 ]
@@ -181,13 +183,13 @@ export function PainelAuditoria({
   return (
     <SecaoPainel>
       <CabecalhoPagina
+        rotulo="Segurança"
         titulo="Auditoria"
         descricao="Eventos de segurança e ações. Exporte o resultado filtrado completo."
         acoes={
-          <Button variant="outline" size="sm" loading={exportando} onClick={exportar}>
-            <Download size={14} />
+          <Botao variante="secundario" tamanho="sm" carregando={exportando} onClick={exportar}>
             Exportar XLSX
-          </Button>
+          </Botao>
         }
       />
 
@@ -234,13 +236,13 @@ export function PainelAuditoria({
             </div>
 
             <div className="auditoria-filtros-acoes">
-              <Button variant="primary" size="sm" onClick={() => aplicarFiltros()}>
+              <Botao variante="primario" tamanho="sm" onClick={() => aplicarFiltros()}>
                 Aplicar
-              </Button>
+              </Botao>
               {filtrosAtivos.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                <Botao variante="fantasma" tamanho="sm" onClick={limparFiltros}>
                   Limpar
-                </Button>
+                </Botao>
               )}
             </div>
           </div>
@@ -348,21 +350,22 @@ export function PainelAuditoria({
           </div>
 
           {registros.length === 0 ? (
-            <div className="painel-vazio">
-              <Shield size={22} style={{ opacity: 0.35 }} />
-              Nenhum registro encontrado.
-            </div>
+            <Vazio
+              titulo="Nenhum registro encontrado"
+              descricao="Ajuste o período, a ação ou o termo de busca."
+              compacto
+            />
           ) : (
             <div className="painel-tabela-rodape flex flex-wrap items-center justify-between gap-2">
               <span>Mostrando {inicio} a {fim} de {total.toLocaleString('pt-BR')}</span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={pagina <= 1} onClick={() => irParaPagina(pagina - 1)}>
+                <Botao variante="secundario" tamanho="sm" disabled={pagina <= 1} onClick={() => irParaPagina(pagina - 1)}>
                   Anterior
-                </Button>
+                </Botao>
                 <span className="text-xs text-(--color-text-3)">Página {pagina} de {totalPaginas || 1}</span>
-                <Button variant="outline" size="sm" disabled={pagina >= totalPaginas} onClick={() => irParaPagina(pagina + 1)}>
+                <Botao variante="secundario" tamanho="sm" disabled={pagina >= totalPaginas} onClick={() => irParaPagina(pagina + 1)}>
                   Próxima
-                </Button>
+                </Botao>
               </div>
             </div>
           )}

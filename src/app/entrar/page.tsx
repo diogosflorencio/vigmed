@@ -9,7 +9,7 @@ export default function PaginaEntrar() {
     <CascaAuth>
       <Suspense>
         <FormularioLogin
-          titulo="Entrar no VIGMED"
+          titulo="Entrar"
           subtitulo="Use o e-mail autorizado. O sistema abre o painel conforme seu perfil."
           permitirCadastro
         />

@@ -1,6 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { registrarAuditoria } from '@/lib/auth/sessao'
 import { validarPerfilAposAutenticacao } from '@/lib/auth/perfil-servidor'
 import {
   ambienteDoPapel,
@@ -107,12 +106,6 @@ export async function GET(requisicao: NextRequest) {
       .from('perfis')
       .update({ ultimo_login_em: new Date().toISOString() })
       .eq('id', data.user.id)
-
-    await registrarAuditoria({
-      acao: 'login',
-      usuarioId: data.user.id,
-      detalhes: { metodo: 'google', email: data.user.email },
-    })
 
     const ambiente = ambienteDoPapel(perfil.papel)
 

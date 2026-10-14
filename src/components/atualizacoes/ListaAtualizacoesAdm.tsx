@@ -1,3 +1,5 @@
+import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
+import { SecaoPainel, CartaoPainel } from '@/components/layout/SecaoPainel'
 import { ATUALIZACOES_VIGMED, VERSAO_ATUAL } from '@/lib/atualizacoes/dados'
 
 function metade(lista: typeof ATUALIZACOES_VIGMED, parte: 0 | 1) {
@@ -7,35 +9,43 @@ function metade(lista: typeof ATUALIZACOES_VIGMED, parte: 0 | 1) {
 
 function ColunaAtualizacoes({ registros }: { registros: typeof ATUALIZACOES_VIGMED }) {
   return (
-    <div className="painel-estat-col">
+    <div className="vm-atualizacoes-col">
       {registros.map((reg) => (
-        <section key={reg.versao} className="painel-estat-secao">
-          <h2 className="painel-estat-secao-titulo">
-            v{reg.versao} · {reg.data}
+        <section key={reg.versao} className="vm-atualizacoes-item">
+          <h2>
+            v{reg.versao}
+            <span>{reg.data}</span>
           </h2>
-          <p className="painel-estat-texto">{reg.itens.join(' · ')}</p>
+          <ul>
+            {reg.itens.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </section>
       ))}
     </div>
   )
 }
 
-/** Lista de versões, mesmo estilo do painel */
+/** Histórico de versões da plataforma */
 export function ListaAtualizacoesAdm() {
   return (
-    <article className="painel-estatisticas" aria-label="Atualizações da plataforma">
-      <header className="painel-estat-topo">
-        <h1 className="painel-estat-titulo">Atualizações</h1>
-        <p className="painel-estat-texto">
-          Versão atual <strong className="painel-estat-num">v{VERSAO_ATUAL}</strong>. Histórico de
-          junho/2026.
-        </p>
-      </header>
+    <SecaoPainel>
+      <CabecalhoPagina
+        rotulo="Sistema"
+        titulo="Atualizações"
+        descricao={`Versão atual v${VERSAO_ATUAL}. Histórico de melhorias da plataforma.`}
+      />
 
-      <div className="painel-estat-grid">
-        <ColunaAtualizacoes registros={metade(ATUALIZACOES_VIGMED, 0)} />
-        <ColunaAtualizacoes registros={metade(ATUALIZACOES_VIGMED, 1)} />
-      </div>
-    </article>
+      <CartaoPainel
+        titulo="Histórico"
+        descricao="Mudanças recentes disponíveis para a equipe e clientes."
+      >
+        <div className="vm-atualizacoes-grid">
+          <ColunaAtualizacoes registros={metade(ATUALIZACOES_VIGMED, 0)} />
+          <ColunaAtualizacoes registros={metade(ATUALIZACOES_VIGMED, 1)} />
+        </div>
+      </CartaoPainel>
+    </SecaoPainel>
   )
 }

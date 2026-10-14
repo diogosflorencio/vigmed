@@ -1,12 +1,16 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
 import { obterConsumoPorEmpresas, obterTotaisArmazenamento } from '@/lib/documentos/armazenamento'
 import { criarClienteSupabaseAdmin } from '@/lib/supabase/admin'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
-import { obterPerfilAtual } from '@/lib/auth/sessao'
+import { obterPerfilAtual, exigirAutenticacao } from '@/lib/auth/sessao'
 import { listarComunicadosEmpresa } from '@/lib/comunicados/acoes'
-import { listarDocumentosRecentes } from '@/lib/documentos/acoes'
-import { listarConversas } from '@/lib/mensagens/acoes'
+import { listarDocumentosRecentes, listarAlertasValidadeDocumentos } from '@/lib/documentos/acoes'
+import { listarAtividadeRecente } from '@/lib/auditoria/acoes'
+import { contarMensagensNaoLidas, obterPrimeiraConversaNaoLida } from '@/lib/mensagens/acoes'
+import { obterPainelConsumoCached } from '@/lib/painel/consumo'
+import { CACHE_TAGS } from '@/lib/cache/tags'
 import type { EstatisticasPainelAdmin, IndicadoresPainel } from '@/types'
 
 const SETE_DIAS_MS = 7 * 86400000
@@ -57,7 +61,6 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     { count: convitesAceitos30d },
     { count: auditoria7d },
     { count: auditoria24h },
-    { count: logins7d },
     { count: envios7d },
     { count: downloads7d },
   ] = await Promise.all([
@@ -91,9 +94,8 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     supabase.from('blog_visualizacoes').select('*', { count: 'exact', head: true }).gte('visualizado_em', desde7d),
     supabase.from('convites_acesso').select('*', { count: 'exact', head: true }).is('usado_em', null),
     supabase.from('convites_acesso').select('*', { count: 'exact', head: true }).gte('usado_em', desde30d),
-    supabase.from('auditoria').select('*', { count: 'exact', head: true }).gte('criado_em', desde7d),
-    supabase.from('auditoria').select('*', { count: 'exact', head: true }).gte('criado_em', desde24h),
-    supabase.from('auditoria').select('*', { count: 'exact', head: true }).eq('acao', 'login').gte('criado_em', desde7d),
+    supabase.from('auditoria').select('*', { count: 'exact', head: true }).not('acao', 'in', '("login","logout")').gte('criado_em', desde7d),
+    supabase.from('auditoria').select('*', { count: 'exact', head: true }).not('acao', 'in', '("login","logout")').gte('criado_em', desde24h),
     supabase.from('auditoria').select('*', { count: 'exact', head: true }).eq('acao', 'envio').gte('criado_em', desde7d),
     supabase.from('auditoria').select('*', { count: 'exact', head: true }).eq('acao', 'download').gte('criado_em', desde7d),
   ])
@@ -171,7 +173,8 @@ export async function buscarEstatisticasPainelAdmin(): Promise<EstatisticasPaine
     auditoria: {
       eventos7d: auditoria7d ?? 0,
       eventos24h: auditoria24h ?? 0,
-      logins7d: logins7d ?? 0,
+      // Usuários distintos com ultimo_login_em nos últimos 7 dias (não eventos de auditoria)
+      logins7d: loginsRecentes ?? 0,
       envios7d: envios7d ?? 0,
       downloads7d: downloads7d ?? 0,
     },
@@ -195,28 +198,150 @@ export async function buscarIndicadoresAdmin(): Promise<IndicadoresPainel> {
 export async function buscarDadosInicioDocs() {
   const perfil = await obterPerfilAtual()
   const supabase = await criarClienteSupabaseServidor()
+  const empresaId = perfil?.empresa_id ?? ''
 
-  const [{ count: totalDocumentos }, { naoLidos }, { conversas }, documentosRecentes] = await Promise.all([
+  const [
+    { count: totalDocumentos },
+    { comunicados, naoLidos },
+    { total: mensagensNovas },
+    documentosRecentes,
+    alertasValidade,
+    conversaNaoLidaId,
+    cota,
+  ] = await Promise.all([
     supabase
       .from('documento_empresas')
       .select('*', { count: 'exact', head: true })
-      .eq('empresa_id', perfil?.empresa_id ?? ''),
+      .eq('empresa_id', empresaId),
     listarComunicadosEmpresa(),
-    listarConversas(),
+    contarMensagensNaoLidas(),
     listarDocumentosRecentes(5),
+    listarAlertasValidadeDocumentos(5),
+    obterPrimeiraConversaNaoLida(),
+    obterCotaArmazenamentoEmpresaAtual(),
   ])
+
+  const comunicadosRecentes = comunicados.slice(0, 4).map((c) => ({
+    id: c.id,
+    titulo: c.titulo,
+    publicado_em: c.publicado_em,
+    lido: c.lido,
+    prioridade: c.prioridade,
+  }))
 
   return {
     primeiroNome: perfil?.nome_completo?.split(' ')[0] ?? 'usuário',
     totalDocumentos: totalDocumentos ?? 0,
     comunicadosNaoLidos: naoLidos,
-    mensagensNovas: conversas.length,
+    mensagensNovas,
     documentosRecentes: documentosRecentes as { id: string; titulo: string; criado_em: string }[],
+    alertasValidade,
+    conversaNaoLidaId,
+    comunicadosRecentes,
+    cota,
   }
 }
 
-/** Painel admin - estatísticas */
+/** Cota de armazenamento da empresa do usuário logado (portal docs). */
+export async function obterCotaArmazenamentoEmpresaAtual() {
+  const perfil = await obterPerfilAtual()
+  if (!perfil?.empresa_id) return null
+
+  const admin = criarClienteSupabaseAdmin()
+  const { data: empresa } = await admin
+    .from('empresas')
+    .select('armazenamento_limite, armazenamento_usado')
+    .eq('id', perfil.empresa_id)
+    .maybeSingle()
+
+  const mapa = await obterConsumoPorEmpresas([perfil.empresa_id])
+  const usado = mapa.get(perfil.empresa_id)?.empresa ?? empresa?.armazenamento_usado ?? 0
+  const limite = empresa?.armazenamento_limite ?? 0
+
+  return { usado, limite }
+}
+
+const estatisticasPainelCached = unstable_cache(buscarEstatisticasPainelAdmin, ['stats-adm-v1'], {
+  revalidate: 60,
+  tags: [CACHE_TAGS.painelAdm],
+})
+
+/** Atividade recente via admin (sem cookies) para poder cachear. */
+async function listarAtividadeRecenteAdmin(limite = 8) {
+  const supabase = criarClienteSupabaseAdmin()
+  const { data } = await supabase
+    .from('auditoria')
+    .select(
+      'id, criado_em, acao, recurso, recurso_id, detalhes, endereco_ip, perfis(nome_completo, email), empresas(nome_fantasia)',
+    )
+    .not('acao', 'in', '("login","logout")')
+    .order('criado_em', { ascending: false })
+    .limit(limite)
+  return data ?? []
+}
+
+const atividadeRecenteCached = unstable_cache(
+  () => listarAtividadeRecenteAdmin(8),
+  ['atividade-adm-v2'],
+  { revalidate: 60, tags: [CACHE_TAGS.painelAdm] },
+)
+
+/**
+ * Painel admin: métricas compartilhadas em cache (60s).
+ * Pendências ficam por request (mensagens/alertas são do usuário).
+ */
 export async function carregarPainelAdmin() {
-  const estatisticas = await buscarEstatisticasPainelAdmin()
-  return { estatisticas }
+  await exigirAutenticacao(['administrador'])
+  const [estatisticas, pendencias, atividadeRecente, consumo] = await Promise.all([
+    estatisticasPainelCached(),
+    buscarPendenciasAdmin(),
+    atividadeRecenteCached(),
+    obterPainelConsumoCached(),
+  ])
+  return {
+    estatisticas,
+    pendencias,
+    atividadeRecente: atividadeRecente as Awaited<ReturnType<typeof listarAtividadeRecente>>,
+    consumo,
+  }
+}
+
+export type PendenciasAdmin = {
+  alertasValidade: Awaited<ReturnType<typeof listarAlertasValidadeDocumentos>>
+  mensagensNaoLidas: number
+  retencaoPendente: number
+  conversaNaoLidaId: string | null
+  convitesPendentes: number
+}
+
+/** Itens que exigem ação imediata no painel admin. */
+export async function buscarPendenciasAdmin(): Promise<PendenciasAdmin> {
+  await exigirAutenticacao(['administrador'])
+  const { obterRetencaoPendenteCached } = await import('@/lib/painel/notificacoes-cache')
+  const [{ total }, alertas, retencaoPendente, conversaNaoLidaId, convitesPendentes] =
+    await Promise.all([
+      contarMensagensNaoLidas(),
+      listarAlertasValidadeDocumentos(6),
+      obterRetencaoPendenteCached(),
+      obterPrimeiraConversaNaoLida(),
+      unstable_cache(
+        async () => {
+          const supabase = criarClienteSupabaseAdmin()
+          const { count } = await supabase
+            .from('convites_acesso')
+            .select('*', { count: 'exact', head: true })
+            .is('usado_em', null)
+          return count ?? 0
+        },
+        ['convites-pendentes-painel-v1'],
+        { revalidate: 60, tags: [CACHE_TAGS.notifPainel] },
+      )(),
+    ])
+  return {
+    alertasValidade: alertas,
+    mensagensNaoLidas: total,
+    retencaoPendente,
+    conversaNaoLidaId,
+    convitesPendentes,
+  }
 }

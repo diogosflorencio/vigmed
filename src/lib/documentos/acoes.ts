@@ -398,3 +398,210 @@ export async function atualizarEmpresasDocumento(documentoId: string, empresaIds
 
   return { sucesso: true }
 }
+
+export async function atualizarValidadeDocumento(documentoId: string, validoAte: string | null) {
+  const perfil = await exigirAutenticacao(['administrador', 'administrador_empresa', 'usuario_empresa'])
+
+  const documento = await obterDocumentoComEmpresas(documentoId)
+  if (!documento) return { erro: 'Documento não encontrado.' }
+
+  if (!ehAdministrador(perfil.papel)) {
+    if (documento.enviado_por !== perfil.id) {
+      return { erro: 'Sem permissão para alterar validade deste documento.' }
+    }
+  }
+
+  let valor: string | null = null
+  if (validoAte?.trim()) {
+    const data = validoAte.trim().slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      return { erro: 'Data de validade inválida.' }
+    }
+    valor = data
+  }
+
+  const admin = criarClienteSupabaseAdmin()
+  const { error } = await admin.from('documentos').update({ valido_ate: valor }).eq('id', documentoId)
+  if (error) return { erro: 'Erro ao atualizar validade.' }
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    empresaId: perfil.empresa_id ?? undefined,
+    recurso: 'documento',
+    recursoId: documentoId,
+    detalhes: { valido_ate: valor },
+  })
+
+  revalidatePath(ROTAS.adm.documentos)
+  revalidatePath(ROTAS.docs.documentos)
+  revalidatePath(ROTAS.docs.painel)
+  revalidatePath(ROTAS.adm.painel)
+  return { sucesso: true, valido_ate: valor }
+}
+
+/** Prorroga validade a partir da data atual ou da validade existente. */
+export async function prorrogarValidadeDocumento(documentoId: string, dias: number) {
+  const diasNum = Math.round(Number(dias))
+  if (!Number.isFinite(diasNum) || diasNum <= 0) {
+    return { erro: 'Informe um número de dias válido.' }
+  }
+
+  const perfil = await exigirAutenticacao(['administrador', 'administrador_empresa', 'usuario_empresa'])
+  const documento = await obterDocumentoComEmpresas(documentoId)
+  if (!documento) return { erro: 'Documento não encontrado.' }
+
+  if (!ehAdministrador(perfil.papel) && documento.enviado_por !== perfil.id) {
+    return { erro: 'Sem permissão para alterar validade deste documento.' }
+  }
+
+  const base = documento.valido_ate
+    ? new Date(`${documento.valido_ate}T00:00:00`)
+    : new Date()
+  base.setHours(0, 0, 0, 0)
+  if (base.getTime() < Date.now()) {
+    base.setTime(Date.now())
+    base.setHours(0, 0, 0, 0)
+  }
+  base.setDate(base.getDate() + diasNum)
+  const novaData = base.toISOString().slice(0, 10)
+
+  const admin = criarClienteSupabaseAdmin()
+  const meta = { ...(documento.metadados as Record<string, unknown> ?? {}) }
+  delete meta.alerta_vencimento_em
+  const { error } = await admin
+    .from('documentos')
+    .update({ valido_ate: novaData, metadados: meta })
+    .eq('id', documentoId)
+
+  if (error) return { erro: 'Erro ao prorrogar validade.' }
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    empresaId: perfil.empresa_id ?? undefined,
+    recurso: 'documento',
+    recursoId: documentoId,
+    detalhes: { valido_ate: novaData, prorrogacao_dias: diasNum },
+  })
+
+  revalidatePath(ROTAS.adm.documentos)
+  revalidatePath(ROTAS.docs.documentos)
+  revalidatePath(ROTAS.docs.painel)
+  revalidatePath(ROTAS.adm.painel)
+  return { sucesso: true, valido_ate: novaData }
+}
+
+export async function atualizarTituloDocumento(documentoId: string, titulo: string) {
+  const perfil = await exigirAutenticacao(['administrador', 'administrador_empresa', 'usuario_empresa'])
+  const documento = await obterDocumentoComEmpresas(documentoId)
+  if (!documento) return { erro: 'Documento não encontrado.' }
+
+  if (!ehAdministrador(perfil.papel) && documento.enviado_por !== perfil.id) {
+    return { erro: 'Sem permissão para renomear este documento.' }
+  }
+
+  const valor = titulo.trim()
+  if (!valor) return { erro: 'Informe um título.' }
+
+  const admin = criarClienteSupabaseAdmin()
+  const { error } = await admin.from('documentos').update({ titulo: valor }).eq('id', documentoId)
+  if (error) return { erro: 'Erro ao atualizar título.' }
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    empresaId: perfil.empresa_id ?? undefined,
+    recurso: 'documento',
+    recursoId: documentoId,
+    detalhes: { titulo: valor },
+  })
+
+  revalidatePath(ROTAS.adm.documentos)
+  revalidatePath(ROTAS.docs.documentos)
+  return { sucesso: true, titulo: valor }
+}
+
+export type AlertaValidadeDocumento = {
+  id: string
+  titulo: string
+  valido_ate: string
+  status: 'vencendo' | 'vencido'
+}
+
+/** Documentos com validade próxima ou vencida para alertas no dashboard. */
+export async function listarAlertasValidadeDocumentos(limite = 5): Promise<AlertaValidadeDocumento[]> {
+  const perfil = await exigirAutenticacao()
+  const admin = criarClienteSupabaseAdmin()
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const alerta = new Date(hoje)
+  alerta.setDate(alerta.getDate() + 30)
+  const ate = alerta.toISOString().slice(0, 10)
+
+  let query = admin
+    .from('documentos')
+    .select('id, titulo, valido_ate, documento_empresas(empresa_id)')
+    .eq('ativo', true)
+    .not('valido_ate', 'is', null)
+    .lte('valido_ate', ate)
+    .order('valido_ate', { ascending: true })
+    .limit(limite * 3)
+
+  if (!ehAdministrador(perfil.papel)) {
+    if (!perfil.empresa_id) return []
+    const { data: vinculos } = await admin
+      .from('documento_empresas')
+      .select('documento_id')
+      .eq('empresa_id', perfil.empresa_id)
+    const ids = vinculos?.map((v) => v.documento_id) ?? []
+    if (!ids.length) return []
+    query = query.in('id', ids)
+  }
+
+  const { data } = await query
+  const hojeStr = hoje.toISOString().slice(0, 10)
+
+  return (data ?? [])
+    .filter((d) => d.valido_ate)
+    .slice(0, limite)
+    .map((d) => ({
+      id: d.id,
+      titulo: d.titulo,
+      valido_ate: d.valido_ate as string,
+      status: (d.valido_ate as string) < hojeStr ? ('vencido' as const) : ('vencendo' as const),
+    }))
+}
+
+export async function contarAlertasValidadeDocumentos(): Promise<number> {
+  const alertas = await listarAlertasValidadeDocumentos(100)
+  return alertas.length
+}
+
+/** Contagem segura para o painel (nunca chama admin no cliente). */
+export async function contarDocumentosRetencao(): Promise<number> {
+  try {
+    await exigirAutenticacao(['administrador'])
+    const { simularRetencaoDocumentos } = await import('@/lib/documentos/retencao')
+    const { candidatos } = await simularRetencaoDocumentos()
+    return candidatos
+  } catch {
+    return 0
+  }
+}
+
+/** Prorroga validade de vários documentos (admin). */
+export async function prorrogarValidadeEmLote(documentoIds: string[], dias: number) {
+  await exigirAutenticacao(['administrador'])
+
+  const ids = [...new Set(documentoIds)].filter(Boolean)
+  if (ids.length === 0) return { erro: 'Nenhum documento selecionado.' }
+
+  let atualizados = 0
+  for (const id of ids) {
+    const r = await prorrogarValidadeDocumento(id, dias)
+    if ('sucesso' in r && r.sucesso) atualizados += 1
+  }
+
+  return { sucesso: true, atualizados, total: ids.length }
+}

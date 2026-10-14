@@ -4,7 +4,7 @@ export interface RegistroAtualizacao {
   itens: string[]
 }
 
-/** Histórico de versões (uma entrada por dia; jun/2026 → ago/2026) */
+/** Histórico de versões (jun/2026 → out/2026) */
 export const ATUALIZACOES_VIGMED: RegistroAtualizacao[] = [
   {
     versao: '0.0.3',
@@ -195,6 +195,156 @@ export const ATUALIZACOES_VIGMED: RegistroAtualizacao[] = [
       'Painel Pessoas unificado + link de ativação copiável',
       'Auditoria com filtro por período e export XLSX no servidor',
       'Cota visível no seletor de upload e empresas expansíveis na lista',
+    ],
+  },
+  {
+    versao: '1.3.0',
+    data: '27 ago 2026',
+    itens: [
+      'Identidade visual VIGMED: componentes vig (Botao, Campo, Modal, Selo, Cartao) e vig.css',
+      'Menu configurável: dock, barra lateral ou superior (preferência no perfil)',
+      'Landing institucional redesenhada; auth split-screen com marca VIGMED',
+      'Painéis internos padronizados; login honra ?redirect=; recuperação de senha no perfil',
+      'Blog habilitado no menu admin; modal VIG no detalhe de documentos',
+    ],
+  },
+  {
+    versao: '1.4.0',
+    data: '28 ago 2026',
+    itens: [
+      'Validade de documentos: prazo no upload, filtros, badges, prorrogação rápida (+30/+90/+1 ano)',
+      'Retenção automática configurável com preview e cron /api/cron/retencao',
+      'E-mail ao publicar comunicado (Resend) e convite automático ao cadastrar empresa',
+      'Alertas de validade por e-mail via cron /api/cron/alertas-validade (7 dias antes)',
+      'Notificações no menu Docs: mensagens, comunicados e documentos a vencer',
+      'Dashboards com pendências acionáveis (admin e portal empresas)',
+      'Deep links: ?doc=id nos documentos, ?conversa=id nas mensagens',
+      'Comunicados marcam como lidos ao entrar na viewport (não todos de uma vez)',
+      'Relatórios ampliados com métricas de validade e exportação CSV',
+    ],
+  },
+  {
+    versao: '1.4.1',
+    data: '28 ago 2026',
+    itens: [
+      'Deep link de mensagens no dashboard (?conversa=id)',
+      'Prorrogação em lote de validade no painel admin (+90 dias na lista filtrada)',
+      'Ordenação de documentos: recentes, antigos ou por validade',
+      'E-mail automático ao convidar usuário (além de copiar link)',
+      'Barra de cota e alerta na ficha da empresa (>90%)',
+      'Relatórios e auditoria ampliados; .env.example documentado',
+    ],
+  },
+  {
+    versao: '1.4.2',
+    data: '28 ago 2026',
+    itens: [
+      'Painel admin: atividade recente da auditoria e atalhos rápidos para áreas principais',
+      'Renomear documento no modal de detalhe (admin e empresa, com permissão)',
+      'Teste de e-mail Resend em Configurações antes de ativar envios automáticos',
+      'Login com ?email= pré-preenchido (fluxo de convite)',
+      'Mensagens: filtro “Só não lidas” na lista de conversas',
+      'Documentos: busca por título ou nome do arquivo',
+    ],
+  },
+  {
+    versao: '1.4.3',
+    data: '28 ago 2026',
+    itens: [
+      'Portal docs: barra de cota de armazenamento no início e em Documentos',
+      'Comunicados docs: busca, filtro “Não lidos” e deep link ?comunicado=id',
+      'Dashboard docs: comunicados recentes com selo de prioridade e status de leitura',
+      'Admin: badge de documentos a vencer no menu; pendência de convites aguardando aceite',
+      'Documentos: filtros persistidos na URL (?q=, ?validade=, ?categoria=); categoria e validade no upload (portal)',
+      'Mensagens admin: filtro por empresa na lista de conversas',
+    ],
+  },
+  {
+    versao: '1.4.4',
+    data: '28 ago 2026',
+    itens: [
+      'Paleta de comando global Ctrl+K em todos os layouts de menu (dock, lateral, superior)',
+      'Botão “Ir para...” no dock, barra lateral e menu superior',
+      'Atalho / foca busca em documentos, comunicados e mensagens',
+      'Modal de documento sincroniza ?doc= na URL; Esc fecha o detalhe',
+      'Badge agregado de pendências no item Início/Painel do menu',
+      'Estados de carregamento com esqueleto animado (Suspense)',
+    ],
+  },
+  {
+    versao: '1.4.5',
+    data: '30 ago 2026',
+    itens: [
+      'Landing institucional com tipografia Unbounded + Sora e design system próprio (.vm). Tudo do Exo Ape',
+      'Scroll suave com Lenis acoplado ao GSAP/ScrollTrigger difícil demais de implementar (pin, scrub, reveals) ',
+      'Teia de conexões em canvas e toggle de tema claro/escuro na landing',
+      'Login alinhado à identidade da landing (split marca/formulário)',
+    ],
+  },
+  {
+    versao: '1.4.6',
+    data: '08 set 2026',
+    itens: [
+      'Painel alinhado à tipografia e cores da landing (sem travessões nos textos)',
+      'Menus: dock, lateral esquerda, lateral direita e superior',
+      'Dock e menu superior fixos em largura total (sem flutuação)',
+      'Menu lateral sticky: não rola junto com o conteúdo',
+      'Conteúdo em largura total; remoção de barras laterais decorativas',
+    ],
+  },
+  {
+    versao: '1.4.7',
+    data: '18 set 2026',
+    itens: [
+      'Documentos: detalhe inline no lugar de modal; visualizador PDF próprio',
+      'Paleta Ctrl+K reformulada como painel superior',
+      'Prefetch de rotas do painel para navegação mais estável',
+      'Avatar só aparece quando há foto de perfil',
+      'Exclusão inline (convites, usuários, conversas) sem modal',
+    ],
+  },
+  {
+    versao: '1.4.8',
+    data: '25 set 2026',
+    itens: [
+      'Painel de consumo: ranking de uso por usuário e visão Supabase / Cloudflare / Vercel',
+      'Cache e revalidate em métricas do dashboard; menos roundtrips',
+      'Notificações em lote com menos POSTs (economia de egress)',
+      'Polling de mensagens reduzido no client',
+      'Banner e animações de entrada nas páginas do painel',
+    ],
+  },
+  {
+    versao: '1.4.9',
+    data: '02 out 2026',
+    itens: [
+      'Perfil: dados pessoais e senha no mesmo fluxo; sem slot de foto vazia',
+      'Aparência: modo de cor e tema com chips consistentes',
+      'Seletor de modelo de menu compacto (inferior, esquerda, direita, superior)',
+      'Botões de exclusão de conta legíveis (texto + confirmação)',
+      'Stacks do painel: Next.js App Router, React, GSAP, Phosphor Icons',
+    ],
+  },
+  {
+    versao: '1.5.0',
+    data: '08 out 2026',
+    itens: [
+      'Documentos: envio e lista em blocos claros; filtros unificados; tabela sem selos excessivos',
+      'Comunicados admin e portal redesenhados (lista + editor / feed de avisos)',
+      'Mensagens: shell de chat, filtros estilizados, formulário “Nova” e composer revisados',
+      'Bolhas e contraste de texto corrigidos; ícones Phosphor no chat',
+      'Selects e inputs do chat no mesmo padrão visual do restante do painel',
+    ],
+  },
+  {
+    versao: '1.5.1',
+    data: '13 out 2026',
+    itens: [
+      'Polimento geral dashboard: hierarquia, densidade e tipografia alinhadas à landing',
+      'Menus e dropdowns: submenu do topo fecha ao clicar fora ou ao selecionar',
+      'Dock inferior com links centralizados no ritmo do menu superior',
+      'Avatar circular padronizado em todo o sistema',
+      'Tokens de fonte --fonte-vm-* compartilhados entre landing e painel',
     ],
   },
 ]

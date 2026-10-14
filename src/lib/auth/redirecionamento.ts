@@ -62,6 +62,52 @@ export function urlPainelAposLogin(papel: PapelUsuario, origem: string): string 
   return `${origem.replace(/\/+$/, '')}${caminhoPainelPorPapel(papel)}`
 }
 
+function caminhoInternoDeRedirect(caminhoPublico: string, ambiente: AmbienteApp): string | null {
+  if (!caminhoPublico.startsWith('/') || caminhoPublico.startsWith('//')) return null
+
+  const prefixo = ambiente === 'adm' ? '/adm' : '/docs'
+
+  if (caminhoPublico.startsWith('/adm') || caminhoPublico.startsWith('/docs')) {
+    const envDoPath = caminhoPublico.startsWith('/adm') ? 'adm' : 'docs'
+    if (envDoPath !== ambiente) return null
+    return caminhoPublico
+  }
+
+  if (caminhoPublico === '/') return `${prefixo}/painel`
+  return `${prefixo}${caminhoPublico}`
+}
+
+/**
+ * Resolve destino após login, respeitando redirect seguro vindo do proxy.
+ */
+export function resolverDestinoPosLogin(
+  papel: PapelUsuario,
+  origem: string,
+  redirectPublico?: string | null,
+  ambienteRedirect?: string | null,
+): string {
+  const ambienteUsuario = ambienteDoPapel(papel)
+
+  if (redirectPublico) {
+    const ambiente =
+      ambienteRedirect === 'adm' || ambienteRedirect === 'docs'
+        ? ambienteRedirect
+        : ambienteUsuario
+
+    if (ambiente === ambienteUsuario) {
+      const interno = caminhoInternoDeRedirect(redirectPublico, ambiente)
+      if (interno) {
+        if (roteamentoPorSubdominio()) {
+          return urlDoAmbiente(ambiente, interno)
+        }
+        return `${origem.replace(/\/+$/, '')}${interno}`
+      }
+    }
+  }
+
+  return urlPainelAposLogin(papel, origem)
+}
+
 /** @deprecated use urlPainelAposLogin */
 export function urlPainelNaOrigem(papel: PapelUsuario, origem: string): string {
   return urlPainelAposLogin(papel, origem)

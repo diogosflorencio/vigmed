@@ -1,6 +1,9 @@
 'use client'
 
 import { MenuDock } from '@/components/layout/menu/MenuDock'
+import { MenuVarianteLateral } from '@/components/layout/menu/MenuVarianteLateral'
+import { MenuSuperior } from '@/components/layout/menu/MenuSuperior'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { ItemNavegacao } from '@/lib/navegacao'
 import type { AmbienteApp } from '@/lib/ambiente'
 import type { Perfil } from '@/types'
@@ -11,7 +14,12 @@ interface Props {
   perfil: Perfil
 }
 
-/** Navegação principal do painel - dock inferior */
+/** Navegação principal do painel: dock, lateral, direita ou superior */
 export function NavegacaoApp(props: Props) {
+  const { modeloMenu } = useTheme()
+
+  if (modeloMenu === 'lateral') return <MenuVarianteLateral {...props} lado="esquerda" />
+  if (modeloMenu === 'direita') return <MenuVarianteLateral {...props} lado="direita" />
+  if (modeloMenu === 'superior') return <MenuSuperior {...props} />
   return <MenuDock {...props} />
 }

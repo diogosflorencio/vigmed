@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import { listarDocumentos, listarCategorias } from '@/lib/documentos/acoes'
 import { listarEmpresasResumo } from '@/lib/empresas/acoes'
 import { obterConsumoPorEmpresas } from '@/lib/documentos/armazenamento'
 import { PainelDocumentos } from '@/components/documentos/PainelDocumentos'
+import { CarregandoPainel } from '@/components/layout/CarregandoPainel'
 
 export const metadata = { title: 'Documentos · VIGMED Admin' }
 
@@ -19,11 +21,13 @@ export default async function PaginaDocumentosAdmin() {
   }))
 
   return (
-    <PainelDocumentos
-      documentos={documentos ?? []}
-      empresas={empresasComCota}
-      categorias={categorias}
-      modo="adm"
-    />
+    <Suspense fallback={<CarregandoPainel rotulo="Carregando documentos" />}>
+      <PainelDocumentos
+        documentos={documentos ?? []}
+        empresas={empresasComCota}
+        categorias={categorias}
+        modo="adm"
+      />
+    </Suspense>
   )
 }

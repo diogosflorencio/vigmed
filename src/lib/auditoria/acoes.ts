@@ -30,6 +30,8 @@ function aplicarFiltros(
   filtros?: FiltrosAuditoria,
 ) {
   let q = query
+  // Login/logout não entram na auditoria (volume alto / egress)
+  q = q.not('acao', 'in', '("login","logout")')
   if (filtros?.acao) q = q.eq('acao', filtros.acao)
   if (filtros?.busca) {
     q = q.or(`endereco_ip.ilike.%${filtros.busca}%,perfis.email.ilike.%${filtros.busca}%`)
@@ -95,4 +97,17 @@ export async function listarAuditoriaParaExportacao(filtros?: Omit<FiltrosAudito
   }
 
   return { registros: (data ?? []) as RegistroAuditoria[] }
+}
+
+/** Últimos eventos para o dashboard admin. */
+export async function listarAtividadeRecente(limite = 8) {
+  await exigirAutenticacao(['administrador'])
+  const supabase = await criarClienteSupabaseServidor()
+  const { data } = await supabase
+    .from('auditoria')
+    .select('id, criado_em, acao, recurso, recurso_id, detalhes, endereco_ip, perfis(nome_completo, email), empresas(nome_fantasia)')
+    .not('acao', 'in', '("login","logout")')
+    .order('criado_em', { ascending: false })
+    .limit(limite)
+  return (data ?? []) as unknown as RegistroAuditoria[]
 }

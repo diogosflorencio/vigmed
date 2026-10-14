@@ -1,18 +1,18 @@
 import type { ReactNode } from 'react'
+import { CascaAuthCliente } from '@/components/auth/CascaAuthCliente'
+import { FonteAuth } from '@/components/auth/FonteAuth'
 import type { AmbienteApp } from '@/lib/ambiente'
-import { ForcarTemaAuth } from '@/components/auth/ForcarTemaAuth'
 
 interface Props {
   children: ReactNode
 }
 
-/** Wrapper visual compartilhado das páginas públicas de autenticação */
+/** Wrapper visual das páginas de autenticação */
 export function CascaAuth({ children }: Props) {
   return (
-    <div className="min-h-dvh flex items-center justify-center px-4 py-12 auth-shell">
-      <ForcarTemaAuth />
-      {children}
-    </div>
+    <FonteAuth>
+      <CascaAuthCliente>{children}</CascaAuthCliente>
+    </FonteAuth>
   )
 }
 

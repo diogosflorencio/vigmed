@@ -7,11 +7,15 @@ import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { ConfirmacaoExclusaoInline } from '@/components/ui/ConfirmacaoExclusaoInline'
-import { Badge, Button, Input } from '@/components/ui'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
+import { Botao } from '@/components/vig/Botao'
+import { Vazio } from '@/components/vig/Vazio'
+import { Campo } from '@/components/vig/Campo'
+import { Selo } from '@/components/vig/Selo'
+import { ConfirmacaoExclusaoInline } from '@/components/ui/ConfirmacaoExclusaoInline'
 import { convidarUsuario, excluirConvite, excluirUsuarioCompleto } from '@/lib/usuarios/acoes'
 import { ROTULO_PAPEL } from '@/lib/usuarios/constantes'
+import { formatarDataHora } from '@/lib/utils'
 import type { AmbienteConvite } from '@/lib/auth/convites'
 import type { PapelUsuario } from '@/types'
 
@@ -85,11 +89,29 @@ export function PainelUsuarios({
   const [empresaId, definirEmpresaId] = useState('')
   const [excluindo, definirExcluindo] = useState<AlvoExclusao>(null)
   const [ultimoLink, definirUltimoLink] = useState<string | null>(null)
+  const [busca, definirBusca] = useState('')
 
   const convitesPendentes = useMemo(
-    () => convites.filter((c) => !c.usado_em),
-    [convites],
+    () =>
+      convites.filter((c) => {
+        if (c.usado_em) return false
+        if (!busca.trim()) return true
+        const q = busca.toLowerCase()
+        return c.email.toLowerCase().includes(q) || c.nome_completo.toLowerCase().includes(q)
+      }),
+    [convites, busca],
   )
+
+  const perfisFiltrados = useMemo(() => {
+    if (!busca.trim()) return perfis
+    const q = busca.toLowerCase()
+    return perfis.filter(
+      (p) =>
+        p.email.toLowerCase().includes(q) ||
+        p.nome_completo.toLowerCase().includes(q) ||
+        (nomeEmpresa(p.empresas)?.toLowerCase().includes(q) ?? false),
+    )
+  }, [perfis, busca])
 
   function aoConvidar(e: React.FormEvent) {
     e.preventDefault()
@@ -111,9 +133,17 @@ export function PainelUsuarios({
       definirUltimoLink(link)
       try {
         await navigator.clipboard.writeText(link)
-        toast.success('E-mail autorizado. Link de ativação copiado.')
+        toast.success(
+          resultado.emailEnviado
+            ? 'Convite criado, link copiado e e-mail enviado.'
+            : 'E-mail autorizado. Link de ativação copiado.',
+        )
       } catch {
-        toast.success(resultado.mensagem ?? 'E-mail autorizado.')
+        toast.success(
+          resultado.emailEnviado
+            ? 'Convite criado e e-mail enviado.'
+            : (resultado.mensagem ?? 'E-mail autorizado.'),
+        )
       }
       definirEmail('')
       definirNome('')
@@ -149,7 +179,20 @@ export function PainelUsuarios({
 
   return (
     <SecaoPainel>
-      <CabecalhoPagina titulo={titulo} descricao={descricao} />
+      <CabecalhoPagina
+        titulo={titulo}
+        descricao={descricao}
+        rotulo={modo === 'empresa' ? 'Portal empresas' : 'Administração'}
+      />
+
+      <RevelarScroll atraso={0.03}>
+        <Campo
+          rotulo="Buscar pessoas"
+          placeholder="E-mail, nome ou empresa..."
+          value={busca}
+          onChange={(e) => definirBusca(e.target.value)}
+        />
+      </RevelarScroll>
 
       <RevelarScroll>
         <div className="painel-form-lateral">
@@ -162,8 +205,8 @@ export function PainelUsuarios({
           </p>
 
           <form onSubmit={aoConvidar} className="grid gap-3 sm:grid-cols-2">
-            <Input label="E-mail" type="email" value={email} onChange={(e) => definirEmail(e.target.value)} placeholder="usuario@empresa.com" required />
-            <Input label="Nome (opcional)" value={nome} onChange={(e) => definirNome(e.target.value)} placeholder="Nome completo" />
+            <Campo rotulo="E-mail" type="email" value={email} onChange={(e) => definirEmail(e.target.value)} placeholder="usuario@empresa.com" required />
+            <Campo rotulo="Nome (opcional)" value={nome} onChange={(e) => definirNome(e.target.value)} placeholder="Nome completo" />
 
             {modo === 'adm' && (
               <>
@@ -198,10 +241,7 @@ export function PainelUsuarios({
             )}
 
             <div className="sm:col-span-2">
-              <Button type="submit" variant="primary" size="sm" loading={pendente('convidar')}>
-                <UserPlus size={14} />
-                Autorizar e copiar link
-              </Button>
+              <Botao type="submit" variante="primario" tamanho="sm" carregando={pendente('convidar')} filho="Autorizar e copiar link" />
             </div>
           </form>
 
@@ -209,9 +249,7 @@ export function PainelUsuarios({
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-(--color-border) bg-(--color-surface-2) px-3 py-2 text-xs">
               <Link2 size={14} className="shrink-0" />
               <span className="truncate flex-1 font-mono">{ultimoLink}</span>
-              <Button type="button" variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(ultimoLink).then(() => toast.success('Copiado.'))}>
-                <Copy size={14} />
-              </Button>
+              <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => navigator.clipboard.writeText(ultimoLink).then(() => toast.success('Copiado.'))} icone={<Copy size={14} />} filho="" />
             </div>
           )}
         </div>
@@ -223,7 +261,7 @@ export function PainelUsuarios({
             Aguardando ativação ({convitesPendentes.length})
           </div>
           {convitesPendentes.length === 0 ? (
-            <div className="painel-vazio text-sm">Nenhum convite pendente.</div>
+            <Vazio titulo="Nenhum convite pendente" compacto />
           ) : (
             convitesPendentes.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-(--color-border) last:border-0">
@@ -235,12 +273,12 @@ export function PainelUsuarios({
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Badge variant="warning" className="text-[10px]">Pendente</Badge>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => copiarLink(c.email)} aria-label="Copiar link">
-                    <Copy size={14} />
-                  </Button>
+                  <Selo variante="alerta">Pendente</Selo>
+                  <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => copiarLink(c.email)} aria-label="Copiar link" icone={<Copy size={14} />} filho="" />
                   <ConfirmacaoExclusaoInline
                     ariaLabel={`Excluir convite ${c.email}`}
+                    rotulo="Excluir"
+                    rotuloConfirmar="Excluir convite?"
                     confirmando={excluindo?.tipo === 'convite' && excluindo.id === c.id}
                     desabilitado={pendente('excluir')}
                     onPedir={() => definirExcluindo({ tipo: 'convite', id: c.id })}
@@ -257,22 +295,23 @@ export function PainelUsuarios({
       <RevelarScroll atraso={0.08}>
         <div className="painel-tabela-wrap">
           <div className="px-3 py-2 border-b border-(--color-border) text-xs font-semibold text-(--color-text-2)">
-            Contas ({perfis.length})
+            Contas ({perfisFiltrados.length})
           </div>
-          {perfis.length === 0 ? (
-            <div className="painel-vazio text-sm">Nenhuma conta ainda.</div>
+          {perfisFiltrados.length === 0 ? (
+            <Vazio titulo="Nenhuma conta encontrada" descricao="Convide alguém ou ajuste a busca." compacto />
           ) : (
-            perfis.map((p) => (
+            perfisFiltrados.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-(--color-border) last:border-0">
                 <div className="min-w-0">
                   <p className="tabela-nome">{p.nome_completo || p.email}</p>
                   <p className="tabela-sub">
                     {p.email} · {ROTULO_PAPEL[p.papel]}
                     {nomeEmpresa(p.empresas) ? ` · ${nomeEmpresa(p.empresas)}` : ''}
+                    {p.ultimo_login_em ? ` · Último acesso ${formatarDataHora(p.ultimo_login_em)}` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Badge variant={p.ativo ? 'success' : 'danger'} className="text-[10px]">
+                  <Selo variante={p.ativo ? 'sucesso' : 'erro'}>
                     {p.ativo ? (
                       <span className="inline-flex items-center gap-1">
                         <CheckCircle2 size={10} /> Ativo
@@ -280,10 +319,12 @@ export function PainelUsuarios({
                     ) : (
                       'Inativo'
                     )}
-                  </Badge>
+                  </Selo>
                   {modo === 'adm' && (
                     <ConfirmacaoExclusaoInline
-                      ariaLabel={`Excluir usuário ${p.email}`}
+                      ariaLabel={`Excluir conta ${p.email}`}
+                      rotulo="Excluir conta"
+                      rotuloConfirmar="Excluir esta conta?"
                       confirmando={excluindo?.tipo === 'usuario' && excluindo.id === p.id}
                       desabilitado={pendente('excluir')}
                       onPedir={() => definirExcluindo({ tipo: 'usuario', id: p.id })}

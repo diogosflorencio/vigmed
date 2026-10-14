@@ -4,8 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { MenuAcoesUsuario } from '@/components/layout/menu/MenuAcoesUsuario'
+import { BotaoPaletaComando } from '@/components/layout/BotaoPaletaComando'
+import { useNotificacoesPortal } from '@/contexts/NotificacoesPortalContext'
+import { badgeDoHref } from '@/lib/navegacao-badge'
 import type { ItemNavegacao } from '@/lib/navegacao'
 import { itemEstaAtivo } from '@/lib/navegacao'
 import type { AmbienteApp } from '@/lib/ambiente'
@@ -16,11 +18,13 @@ interface Props {
   itens: ItemNavegacao[]
   ambiente: AmbienteApp
   perfil: Perfil
+  lado?: 'esquerda' | 'direita'
 }
 
-/** Variante 1 - barra lateral fixa à esquerda */
-export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
+/** Barra lateral fixa à esquerda ou à direita */
+export function MenuVarianteLateral({ itens, ambiente, perfil, lado = 'esquerda' }: Props) {
   const caminho = usePathname()
+  const notificacoes = useNotificacoesPortal()
   const [gruposAbertos, definirGruposAbertos] = useState<Record<string, boolean>>({})
   const [mobileAberto, definirMobileAberto] = useState(false)
   const rotuloAmbiente = ambiente === 'adm' ? 'Administração' : 'Portal empresas'
@@ -32,7 +36,10 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
   const conteudo = (
   <>
     <div className="menu-lateral-marca">
-      <p className="menu-lateral-logo">VIGMED</p>
+      <p className="menu-lateral-logo">
+        <span className="vig-landing-logo-marca" aria-hidden />
+        <span className="menu-lateral-logo-texto">VIGMED</span>
+      </p>
       <p className="menu-lateral-ambiente">{rotuloAmbiente}</p>
     </div>
 
@@ -46,7 +53,6 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
               return (
                 <li key={item.id}>
                   <a href={item.href} target="_blank" rel="noopener noreferrer" className={classe}>
-                    <IconeAnimado nome={item.icone} tamanho={16} />
                     <span>{item.rotulo}</span>
                   </a>
                 </li>
@@ -55,8 +61,13 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
             return (
               <li key={item.id}>
                 <Link href={item.href} className={classe} onClick={() => definirMobileAberto(false)}>
-                  <IconeAnimado nome={item.icone} tamanho={16} />
                   <span>{item.rotulo}</span>
+                  {(() => {
+                    const badge = badgeDoHref(item.href, notificacoes)
+                    return badge > 0 ? (
+                      <span className="menu-nav-badge">{badge > 99 ? '99+' : badge}</span>
+                    ) : null
+                  })()}
                 </Link>
               </li>
             )
@@ -72,9 +83,8 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
                 className={cn('menu-lateral-link menu-lateral-link--grupo', grupoAtivo && 'menu-lateral-link--ativo')}
                 onClick={() => alternarGrupo(item.id)}
               >
-                <IconeAnimado nome={item.icone} tamanho={16} />
                 <span className="flex-1 text-left">{item.rotulo}</span>
-                <IconeAnimado nome={aberto ? 'chevron-up' : 'chevron-down'} tamanho={13} />
+                <span className={cn('menu-chevron', aberto && 'menu-chevron--aberto')} aria-hidden />
               </button>
               <AnimatePresence initial={false}>
                 {aberto && (
@@ -106,6 +116,7 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
     </nav>
 
     <div className="menu-lateral-rodape">
+      <BotaoPaletaComando className="w-full mb-2" />
       <MenuAcoesUsuario ambiente={ambiente} perfil={perfil} />
     </div>
   </>
@@ -119,10 +130,18 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
         onClick={() => definirMobileAberto((v) => !v)}
         aria-label="Menu"
       >
-        <IconeAnimado nome={mobileAberto ? 'x' : 'menu'} tamanho={18} />
+        <span className="vig-landing-nav-toggle-bar" />
+        <span className="vig-landing-nav-toggle-bar" />
       </button>
 
-      <aside className="menu-lateral hidden md:flex">{conteudo}</aside>
+      <aside
+        className={cn(
+          'menu-lateral hidden md:flex',
+          lado === 'direita' && 'menu-lateral--direita',
+        )}
+      >
+        {conteudo}
+      </aside>
 
       <AnimatePresence>
         {mobileAberto && (
@@ -135,11 +154,14 @@ export function MenuVarianteLateral({ itens, ambiente, perfil }: Props) {
               onClick={() => definirMobileAberto(false)}
             />
             <motion.aside
-              className="menu-lateral menu-lateral--mobile md:hidden"
-              initial={{ x: '-100%' }}
+              className={cn(
+                'menu-lateral menu-lateral--mobile md:hidden',
+                lado === 'direita' && 'menu-lateral--direita',
+              )}
+              initial={{ x: lado === 'direita' ? '100%' : '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              exit={{ x: lado === 'direita' ? '100%' : '-100%' }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
             >
               {conteudo}
             </motion.aside>
