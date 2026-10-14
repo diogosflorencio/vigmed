@@ -158,3 +158,51 @@ export async function salvarConfiguracoesSistema(dados: DadosConfiguracoesSistem
   revalidatePath(ROTAS.adm.configuracoes)
   return { sucesso: true }
 }
+
+/** Simula retenção sem excluir (admin). */
+export async function simularRetencaoConfiguracao() {
+  await exigirAutenticacao(['administrador'])
+  const { simularRetencaoDocumentos } = await import('@/lib/documentos/retencao')
+  return simularRetencaoDocumentos()
+}
+
+/** Envia e-mail de teste para validar Resend (admin). */
+export async function enviarEmailTeste(emailDestino: string) {
+  const perfil = await exigirAutenticacao(['administrador'])
+  const email = emailDestino.trim().toLowerCase()
+  if (!email.includes('@')) return { erro: 'Informe um e-mail válido.' }
+
+  const { enviarEmail } = await import('@/lib/email/enviar')
+  const resultado = await enviarEmail({
+    para: email,
+    assunto: '[VIGMED] E-mail de teste',
+    html: `
+      <p style="font-family:system-ui,sans-serif">Configuração de e-mail OK.</p>
+      <p style="font-family:system-ui,sans-serif;color:#555">Enviado por ${perfil.email} em ${new Date().toLocaleString('pt-BR')}.</p>
+    `,
+    texto: 'Configuração de e-mail VIGMED OK.',
+  })
+
+  if (!resultado.enviado) {
+    return { erro: resultado.motivo ?? 'Falha ao enviar e-mail de teste.' }
+  }
+  return { sucesso: true }
+}
+
+/** Executa exclusão por retenção manualmente (admin). */
+export async function executarRetencaoDocumentos() {
+  const perfil = await exigirAutenticacao(['administrador'])
+  const { aplicarRetencaoDocumentos } = await import('@/lib/documentos/retencao')
+  const resultado = await aplicarRetencaoDocumentos()
+
+  await registrarAuditoria({
+    acao: 'atualizacao',
+    usuarioId: perfil.id,
+    recurso: 'configuracoes',
+    detalhes: { acao: 'retencao_documentos', ...resultado },
+  })
+
+  revalidatePath(ROTAS.adm.documentos)
+  revalidatePath(ROTAS.docs.documentos)
+  return { sucesso: true, ...resultado }
+}

@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
 import { Botao } from '@/components/vig/Botao'
 import { Campo } from '@/components/vig/Campo'
+import { CampoSenha } from '@/components/vig/CampoSenha'
 import { Cartao } from '@/components/vig/Cartao'
 import { AuthGoogleBotao } from '@/components/auth/AuthGoogleBotao'
 import { cadastrarComEmail } from '@/lib/auth/acoes'
@@ -54,12 +54,7 @@ function FormularioCadastroInterno() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="w-full max-w-md mx-auto"
-    >
+    <div className="w-full max-w-md mx-auto">
       <Cartao className="vig-auth-card">
         <div className="vig-auth-card-topo">
           <h1>Ativar conta</h1>
@@ -75,10 +70,14 @@ function FormularioCadastroInterno() {
         <form onSubmit={aoEnviar} className="flex flex-col gap-4">
           <Campo rotulo="Nome completo" value={nome} onChange={(e) => definirNome(e.target.value)} placeholder="Seu nome" required />
           <Campo rotulo="E-mail" type="email" value={email} onChange={(e) => definirEmail(e.target.value)} placeholder="seu@email.com" required />
-          <Campo rotulo="Senha" type="password" value={senha} onChange={(e) => definirSenha(e.target.value)} placeholder="Mínimo 8 caracteres" required />
-          <Campo rotulo="Confirmar senha" type="password" value={confirmarSenha} onChange={(e) => definirConfirmarSenha(e.target.value)} placeholder="Repita a senha" required />
+          <CampoSenha rotulo="Senha" value={senha} onChange={(e) => definirSenha(e.target.value)} placeholder="Mínimo 8 caracteres" required />
+          <CampoSenha rotulo="Confirmar senha" value={confirmarSenha} onChange={(e) => definirConfirmarSenha(e.target.value)} placeholder="Repita a senha" required />
 
-          {erro && <p className="vig-campo-erro text-center">{erro}</p>}
+          {erro && (
+            <div className="vig-auth-erro" role="alert">
+              {erro}
+            </div>
+          )}
 
           <Botao type="submit" variante="primario" className="w-full mt-1" disabled={pendente} filho="Criar conta" />
         </form>
@@ -87,7 +86,7 @@ function FormularioCadastroInterno() {
           Já tem conta? <a href={ROTAS.auth.entrar}>Entrar</a>
         </p>
       </Cartao>
-    </motion.div>
+    </div>
   )
 }
 

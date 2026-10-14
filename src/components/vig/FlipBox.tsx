@@ -1,8 +1,17 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+
+export type TomFlipBox =
+  | 'navy'
+  | 'teal'
+  | 'teal-escuro'
+  | 'slate'
+  | 'cyan'
+  | 'ocean'
+  | 'claro'
 
 interface Props {
   titulo: string
@@ -11,25 +20,53 @@ interface Props {
   href?: string
   rotuloBotao?: string
   className?: string
+  tom?: TomFlipBox
 }
 
-/** Cartão que vira ao hover ou foco, inspirado em flip-boxes corporativos */
+/** Cartão que vira ao hover, foco ou toque (estilo grade de serviços corporativos). */
 export function FlipBox({
   titulo,
   descricao,
   icone,
   href,
-  rotuloBotao = 'Ver mais',
+  rotuloBotao = 'Saiba mais',
   className,
+  tom = 'claro',
 }: Props) {
+  const [virado, definirVirado] = useState(false)
+
   const botao = href ? (
-    <Link href={href} className="vig-flip-box-btn" onClick={(e) => e.stopPropagation()}>
+    <Link
+      href={href}
+      className="vig-flip-box-btn"
+      onClick={(e) => e.stopPropagation()}
+    >
       {rotuloBotao}
     </Link>
-  ) : null
+  ) : (
+    <span className="vig-flip-box-btn vig-flip-box-btn--estatico">{rotuloBotao}</span>
+  )
 
   return (
-    <div className={cn('vig-flip-box', className)} tabIndex={0}>
+    <div
+      className={cn(
+        'vig-flip-box',
+        `vig-flip-box--${tom}`,
+        virado && 'vig-flip-box--virado',
+        className,
+      )}
+      tabIndex={0}
+      role="button"
+      aria-label={`${titulo}. ${descricao}`}
+      onClick={() => definirVirado((v) => !v)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          definirVirado((v) => !v)
+        }
+      }}
+      onBlur={() => definirVirado(false)}
+    >
       <div className="vig-flip-box-inner">
         <div className="vig-flip-box-face vig-flip-box-face--frente">
           {icone && <div className="vig-flip-box-icone">{icone}</div>}

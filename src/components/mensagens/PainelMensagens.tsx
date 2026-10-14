@@ -1,12 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, CheckCheck, MessageSquare, Plus, Send } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { useAtalhoBusca } from '@/hooks/use-atalho-busca'
+import { CaretLeft, Check, Checks, PaperPlaneTilt, Plus, X } from '@phosphor-icons/react'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { Button } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { EsqueletoChat } from '@/components/vig/Esqueleto'
+import { Vazio } from '@/components/vig/Vazio'
 import { ConfirmacaoExclusaoInline } from '@/components/ui/ConfirmacaoExclusaoInline'
 import { useMensagensNaoLidas } from '@/contexts/MensagensNaoLidasContext'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
@@ -15,7 +19,6 @@ import {
   enviarMensagem,
   excluirConversa,
   excluirMensagem,
-  listarConversas,
   listarMensagens,
 } from '@/lib/mensagens/acoes'
 import { cn, formatarDataHora } from '@/lib/utils'
@@ -48,6 +51,7 @@ interface Props {
 }
 
 export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdmin }: Props) {
+  const searchParams = useSearchParams()
   const { pendente, executar } = useAcaoPendente<'criar' | 'enviar' | 'excluir-conversa' | 'excluir-mensagem'>()
   const { total: totalNaoLidas, definirTotal, atualizar: atualizarNaoLidas } = useMensagensNaoLidas()
   const [conversas, definirConversas] = useState(conversasIniciais)
@@ -59,7 +63,16 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
   const [carregandoMsgs, definirCarregandoMsgs] = useState(false)
   const [excluirConversaId, definirExcluirConversaId] = useState<string | null>(null)
   const [excluirMensagemId, definirExcluirMensagemId] = useState<string | null>(null)
+  const [mobileThread, definirMobileThread] = useState(false)
+  const [buscaConversa, definirBuscaConversa] = useState('')
+  const [somenteNaoLidas, definirSomenteNaoLidas] = useState(false)
+  const [empresaFiltro, definirEmpresaFiltro] = useState('')
+  const [novaAberta, definirNovaAberta] = useState(false)
   const fimRef = useRef<HTMLDivElement>(null)
+  const textoRef = useRef<HTMLTextAreaElement>(null)
+  const buscaRef = useRef<HTMLInputElement>(null)
+
+  useAtalhoBusca(buscaRef)
 
   useEffect(() => {
     const porId = new Map<string, ConversaItem>()
@@ -73,68 +86,48 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
   }, [conversasIniciais])
 
   useEffect(() => {
+    const conversaParam = searchParams.get('conversa')
+    if (!conversaParam) return
+    if (conversasIniciais.some((c) => c.id === conversaParam)) {
+      definirSelecionada(conversaParam)
+      definirMobileThread(true)
+    }
+  }, [searchParams, conversasIniciais])
+
+  useEffect(() => {
     if (!selecionada) return
-    void carregarMensagens(selecionada)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    let ativo = true
+    definirCarregandoMsgs(true)
+    void listarMensagens(selecionada)
+      .then((lista) => {
+        if (ativo) definirMensagens(lista as MensagemItem[])
+      })
+      .catch(() => toast.error('Não foi possível carregar as mensagens.'))
+      .finally(() => {
+        if (ativo) definirCarregandoMsgs(false)
+      })
+    return () => {
+      ativo = false
+    }
+  }, [selecionada])
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [mensagens.length, selecionada])
 
   useEffect(() => {
-    if (!selecionada) return
-    const id = window.setInterval(() => {
-      void listarMensagens(selecionada).then((lista) => {
-        definirMensagens(lista as MensagemItem[])
-      })
-    }, 12000)
-    return () => window.clearInterval(id)
-  }, [selecionada])
+    const el = textoRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+  }, [texto])
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      void listarConversas().then((r) => {
-        if (!r.conversas) return
-        definirConversas((atuais) => {
-          const porId = new Map(r.conversas.map((c) => [c.id, c]))
-          const idsServidor = new Set(porId.keys())
-          const mescladas = atuais
-            .filter((c) => idsServidor.has(c.id))
-            .map((c) => {
-              const nova = porId.get(c.id)!
-              return {
-                ...c,
-                atualizado_em: nova.atualizado_em,
-                nao_lidas: selecionada === c.id ? 0 : (nova.nao_lidas ?? 0),
-              }
-            })
-          for (const c of r.conversas) {
-            if (!mescladas.some((m) => m.id === c.id)) {
-              mescladas.push({
-                id: c.id,
-                assunto: c.assunto,
-                atualizado_em: c.atualizado_em,
-                empresa_id: c.empresa_id,
-                empresas: c.empresas as { nome_fantasia: string } | null,
-                nao_lidas: selecionada === c.id ? 0 : (c.nao_lidas ?? 0),
-              })
-            }
-          }
-          return mescladas.sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em))
-        })
-      })
-      void atualizarNaoLidas()
-    }, 20000)
-    return () => window.clearInterval(id)
-  }, [selecionada, atualizarNaoLidas])
-
-  async function carregarMensagens(conversaId: string) {
+  async function selecionarConversa(conversaId: string) {
     const anteriores = conversas.find((c) => c.id === conversaId)?.nao_lidas ?? 0
     definirSelecionada(conversaId)
     definirExcluirMensagemId(null)
     definirExcluirConversaId(null)
-    definirCarregandoMsgs(true)
+    definirMobileThread(true)
 
     if (anteriores > 0) {
       definirConversas((lista) =>
@@ -143,13 +136,7 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
       definirTotal(Math.max(0, totalNaoLidas - anteriores))
     }
 
-    try {
-      const lista = await listarMensagens(conversaId)
-      definirMensagens(lista as MensagemItem[])
-      await atualizarNaoLidas()
-    } finally {
-      definirCarregandoMsgs(false)
-    }
+    await atualizarNaoLidas()
   }
 
   function aoEnviar() {
@@ -157,27 +144,20 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
     const corpo = texto.trim()
     const conversaId = selecionada
     definirTexto('')
-
     void executar('enviar', async () => {
-      const resultado = await enviarMensagem(conversaId, corpo)
-      if (resultado.erro) {
+      const r = await enviarMensagem(conversaId, corpo)
+      if (r.erro) {
+        toast.error(r.erro)
         definirTexto(corpo)
-        toast.error(resultado.erro)
         return
       }
-
-      if (resultado.mensagem) {
-        definirMensagens((lista) => [...lista, resultado.mensagem as MensagemItem])
-      } else {
-        const lista = await listarMensagens(conversaId)
-        definirMensagens(lista as MensagemItem[])
-      }
-
-      definirConversas((lista) =>
-        lista
+      const lista = await listarMensagens(conversaId)
+      definirMensagens(lista as MensagemItem[])
+      definirConversas((atuais) =>
+        [...atuais]
           .map((c) =>
             c.id === conversaId
-              ? { ...c, atualizado_em: new Date().toISOString() }
+              ? { ...c, atualizado_em: new Date().toISOString(), nao_lidas: 0 }
               : c,
           )
           .sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em)),
@@ -186,185 +166,243 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
   }
 
   function criarNova() {
-    if (!novaAssunto.trim()) { toast.error('Informe o assunto.'); return }
-    if (modoAdmin && !novaEmpresa) { toast.error('Selecione a empresa.'); return }
-
+    if (!novaAssunto.trim() || !novaEmpresa) {
+      toast.error('Informe assunto e empresa.')
+      return
+    }
     void executar('criar', async () => {
-      const resultado = await criarConversa(novaAssunto, novaEmpresa || undefined)
-      if (resultado.erro) { toast.error(resultado.erro); return }
-
-      const criada = resultado.conversa
-      if (criada) {
-        const empresaNome =
-          criada.empresas?.nome_fantasia
-          ?? empresas.find((e) => e.id === novaEmpresa)?.nome_fantasia
-          ?? null
-
-        const item: ConversaItem = {
-          ...criada,
-          nao_lidas: 0,
-          empresas: criada.empresas ?? (empresaNome ? { nome_fantasia: empresaNome } : null),
-        }
-
-        definirConversas((lista) => [item, ...lista.filter((c) => c.id !== item.id)])
-        definirSelecionada(item.id)
-        definirMensagens([])
+      const r = await criarConversa(novaAssunto.trim(), novaEmpresa)
+      if (r.erro) {
+        toast.error(r.erro)
+        return
       }
-
       toast.success('Conversa criada.')
       definirNovaAssunto('')
       definirNovaEmpresa('')
+      definirNovaAberta(false)
+      if (r.conversa) {
+        definirConversas((lista) =>
+          [r.conversa!, ...lista.filter((c) => c.id !== r.conversa!.id)].sort((a, b) =>
+            b.atualizado_em.localeCompare(a.atualizado_em),
+          ),
+        )
+        definirSelecionada(r.conversaId ?? r.conversa.id)
+        definirMobileThread(true)
+      }
     })
   }
 
-  function confirmarExcluirConversa(conversaId: string) {
+  function confirmarExcluirConversa(id: string) {
     void executar('excluir-conversa', async () => {
-      const resultado = await excluirConversa(conversaId)
-      if (resultado.erro) {
-        toast.error(resultado.erro)
+      const r = await excluirConversa(id)
+      if (r.erro) {
+        toast.error(r.erro)
         return
       }
-
-      const restantes = conversas.filter((c) => c.id !== conversaId)
-      definirConversas(restantes)
-      definirExcluirConversaId(null)
-
-      if (selecionada === conversaId) {
-        const proxima = restantes[0]?.id ?? null
-        definirSelecionada(proxima)
-        definirMensagens([])
-        if (proxima) void carregarMensagens(proxima)
-      }
-
-      await atualizarNaoLidas()
       toast.success('Conversa excluída.')
+      definirExcluirConversaId(null)
+      definirConversas((lista) => lista.filter((c) => c.id !== id))
+      if (selecionada === id) {
+        definirSelecionada(null)
+        definirMensagens([])
+        definirMobileThread(false)
+      }
     })
   }
 
-  function confirmarExcluirMensagem(mensagemId: string) {
+  function confirmarExcluirMensagem(id: string) {
     void executar('excluir-mensagem', async () => {
-      const resultado = await excluirMensagem(mensagemId)
-      if (resultado.erro) {
-        toast.error(resultado.erro)
+      const r = await excluirMensagem(id)
+      if (r.erro) {
+        toast.error(r.erro)
         return
       }
-
-      definirMensagens((lista) => lista.filter((m) => m.id !== mensagemId))
-      definirExcluirMensagemId(null)
-      await atualizarNaoLidas()
       toast.success('Mensagem excluída.')
+      definirExcluirMensagemId(null)
+      definirMensagens((lista) => lista.filter((m) => m.id !== id))
     })
   }
 
   const conversaAtual = conversas.find((c) => c.id === selecionada)
 
+  const conversasFiltradas = conversas.filter((c) => {
+    if (somenteNaoLidas && (c.nao_lidas ?? 0) === 0) return false
+    if (empresaFiltro && c.empresa_id !== empresaFiltro) return false
+    if (!buscaConversa.trim()) return true
+    const termo = buscaConversa.trim().toLowerCase()
+    const assunto = (c.assunto ?? '').toLowerCase()
+    const empresa = (c.empresas?.nome_fantasia ?? '').toLowerCase()
+    return assunto.includes(termo) || empresa.includes(termo)
+  })
+
   return (
-    <SecaoPainel>
+    <SecaoPainel className="msg-pagina">
       <CabecalhoPagina
+        rotulo={modoAdmin ? 'Administração' : 'Portal'}
         titulo="Mensagens"
-        descricao={
-          modoAdmin
-            ? 'Conversas com as empresas.'
-            : 'Fale com a equipe VIGMED.'
-        }
+        descricao={modoAdmin ? 'Conversas com as empresas.' : 'Fale com a equipe VIGMED.'}
       />
 
-      {modoAdmin && (
-        <RevelarScroll>
-          <div className="painel-nova-conversa">
-            <div className="painel-campo" style={{ flex: 1, minWidth: 160 }}>
-              <label className="painel-label">Nova conversa</label>
-              <input
-                className="painel-input"
-                placeholder="Assunto da conversa..."
-                value={novaAssunto}
-                onChange={(e) => definirNovaAssunto(e.target.value)}
-              />
+      <RevelarScroll atraso={0.04}>
+        <div
+          className={cn(
+            'msg-shell',
+            !modoAdmin && 'msg-shell--empresa',
+            mobileThread && 'msg-shell--thread',
+          )}
+        >
+          <aside className="msg-lista">
+            <div className="msg-lista-topo">
+              <div>
+                <h2 className="msg-lista-titulo">Conversas</h2>
+                <p className="msg-lista-contagem">{conversasFiltradas.length}</p>
+              </div>
+              {modoAdmin && (
+                <button
+                  type="button"
+                  className={cn('msg-btn-nova', novaAberta && 'msg-btn-nova--aberta')}
+                  onClick={() => definirNovaAberta((v) => !v)}
+                  aria-expanded={novaAberta}
+                >
+                  {novaAberta ? <X size={14} weight="bold" /> : <Plus size={14} weight="bold" />}
+                  {novaAberta ? 'Fechar' : 'Nova'}
+                </button>
+              )}
             </div>
-            <div className="painel-campo" style={{ minWidth: 180 }}>
-              <label className="painel-label">Empresa</label>
+
+            {modoAdmin && novaAberta && (
+              <div className="msg-nova">
+                <label className="msg-campo">
+                  <span>Assunto</span>
+                  <input
+                    className="msg-input"
+                    placeholder="Ex.: Renovação PCMSO"
+                    value={novaAssunto}
+                    onChange={(e) => definirNovaAssunto(e.target.value)}
+                  />
+                </label>
+                <label className="msg-campo">
+                  <span>Empresa</span>
+                  <select
+                    className="msg-input msg-select"
+                    value={novaEmpresa}
+                    onChange={(e) => definirNovaEmpresa(e.target.value)}
+                  >
+                    <option value="">Selecione…</option>
+                    {empresas.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nome_fantasia}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Botao
+                  variante="primario"
+                  tamanho="sm"
+                  carregando={pendente('criar')}
+                  onClick={criarNova}
+                  filho="Criar conversa"
+                />
+              </div>
+            )}
+
+            <div className="msg-filtros">
+              <input
+                ref={buscaRef}
+                className="msg-input"
+                placeholder="Buscar…"
+                value={buscaConversa}
+                onChange={(e) => definirBuscaConversa(e.target.value)}
+                aria-label="Buscar conversas"
+              />
+              {modoAdmin && empresas.length > 1 && (
+                <select
+                  className="msg-input msg-select"
+                  value={empresaFiltro}
+                  onChange={(e) => definirEmpresaFiltro(e.target.value)}
+                  aria-label="Filtrar por empresa"
+                >
+                  <option value="">Todas as empresas</option>
+                  {empresas.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.nome_fantasia}
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
-                className="painel-select"
-                style={{ width: '100%' }}
-                value={novaEmpresa}
-                onChange={(e) => definirNovaEmpresa(e.target.value)}
+                className="msg-input msg-select"
+                value={somenteNaoLidas ? 'nao-lidas' : 'todas'}
+                onChange={(e) => definirSomenteNaoLidas(e.target.value === 'nao-lidas')}
+                aria-label="Filtro de leitura"
               >
-                <option value="">Selecione...</option>
-                {empresas.map((e) => (
-                  <option key={e.id} value={e.id}>{e.nome_fantasia}</option>
-                ))}
+                <option value="todas">Todas</option>
+                <option value="nao-lidas">
+                  Não lidas{totalNaoLidas > 0 ? ` (${totalNaoLidas})` : ''}
+                </option>
               </select>
             </div>
-            <div style={{ paddingTop: '1.1rem' }}>
-              <Button variant="primary" size="sm" onClick={criarNova} loading={pendente('criar')}>
-                <Plus size={14} />
-                Criar
-              </Button>
-            </div>
-          </div>
-        </RevelarScroll>
-      )}
 
-      <RevelarScroll atraso={0.06}>
-        <div className={cn('painel-chat', !modoAdmin && 'painel-chat--empresa')}>
-          <aside className="painel-chat-lista">
-            <div className="painel-chat-lista-topo">
-              <span>Conversas</span>
-              <span className="painel-chat-lista-contagem">{conversas.length}</span>
-            </div>
-            <div className="painel-chat-lista-corpo">
-              {conversas.map((c) => {
+            <div className="msg-lista-corpo">
+              {conversasFiltradas.map((c) => {
                 const naoLidas = c.nao_lidas ?? 0
                 const ativa = selecionada === c.id
                 return (
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => void carregarMensagens(c.id)}
+                    onClick={() => void selecionarConversa(c.id)}
                     className={cn(
-                      'painel-chat-item',
-                      ativa && 'painel-chat-item--ativo',
-                      naoLidas > 0 && 'painel-chat-item--nao-lido',
+                      'msg-item',
+                      ativa && 'msg-item--ativo',
+                      naoLidas > 0 && 'msg-item--novo',
                     )}
                   >
-                    <div className="painel-chat-item-corpo">
-                      <div className="painel-chat-item-topo">
-                        <p className="painel-chat-item-assunto">
-                          {c.assunto ?? 'Sem assunto'}
-                        </p>
-                        {naoLidas > 0 ? (
-                          <span className="painel-chat-badge" aria-label={`${naoLidas} não lidas`}>
-                            {naoLidas > 99 ? '99+' : naoLidas}
-                          </span>
-                        ) : (
-                          <span className="painel-chat-item-hora">
-                            {formatarDataHora(c.atualizado_em)}
-                          </span>
-                        )}
-                      </div>
-                      {modoAdmin && c.empresas?.nome_fantasia && (
-                        <p className="painel-chat-item-empresa">{c.empresas.nome_fantasia}</p>
-                      )}
-                    </div>
+                    <span className="msg-item-assunto">{c.assunto ?? 'Sem assunto'}</span>
+                    <span className="msg-item-meta">
+                      {modoAdmin && c.empresas?.nome_fantasia
+                        ? `${c.empresas.nome_fantasia} · `
+                        : ''}
+                      {formatarDataHora(c.atualizado_em)}
+                    </span>
+                    {naoLidas > 0 && (
+                      <span className="msg-item-badge">{naoLidas > 99 ? '99+' : naoLidas}</span>
+                    )}
                   </button>
                 )
               })}
-              {conversas.length === 0 && (
-                <p className="painel-chat-vazio">Nenhuma conversa ainda.</p>
+              {conversasFiltradas.length === 0 && (
+                <Vazio
+                  titulo={buscaConversa.trim() ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa'}
+                  descricao={
+                    buscaConversa.trim()
+                      ? 'Tente outro termo.'
+                      : modoAdmin
+                        ? 'Crie uma conversa com Nova.'
+                        : 'A equipe VIGMED inicia o contato quando necessário.'
+                  }
+                  compacto
+                />
               )}
             </div>
           </aside>
 
-          <section className="painel-chat-thread">
+          <section className="msg-thread">
             {conversaAtual ? (
               <>
-                <header className="painel-chat-cabecalho">
-                  <div className="painel-chat-cabecalho-texto">
-                    <p className="painel-chat-cabecalho-titulo">{conversaAtual.assunto}</p>
+                <header className="msg-thread-topo">
+                  <button
+                    type="button"
+                    className="msg-voltar md:hidden"
+                    onClick={() => definirMobileThread(false)}
+                    aria-label="Voltar para conversas"
+                  >
+                    <CaretLeft size={18} weight="bold" />
+                  </button>
+                  <div className="msg-thread-info">
+                    <h3>{conversaAtual.assunto}</h3>
                     {modoAdmin && conversaAtual.empresas?.nome_fantasia && (
-                      <p className="painel-chat-cabecalho-sub">
-                        {conversaAtual.empresas.nome_fantasia}
-                      </p>
+                      <p>{conversaAtual.empresas.nome_fantasia}</p>
                     )}
                   </div>
                   {modoAdmin && (
@@ -384,57 +422,42 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
                   )}
                 </header>
 
-                <div className="painel-chat-mensagens">
-                  {carregandoMsgs && (
-                    <p className="painel-chat-vazio">Carregando...</p>
-                  )}
+                <div className="msg-thread-msgs">
+                  {carregandoMsgs && <EsqueletoChat />}
                   {!carregandoMsgs && mensagens.length === 0 && (
-                    <p className="painel-chat-vazio">
-                      Nenhuma mensagem ainda. Envie a primeira.
-                    </p>
+                    <Vazio
+                      titulo="Nenhuma mensagem ainda"
+                      descricao="Escreva abaixo para iniciar."
+                      compacto
+                    />
                   )}
                   {mensagens.map((m) => {
                     const propria = m.remetente_id === perfilId
                     return (
                       <div
                         key={m.id}
-                        className={cn(
-                          'painel-chat-msg',
-                          propria && 'painel-chat-msg--minha',
-                          excluirMensagemId === m.id && 'painel-chat-msg--excluindo',
-                        )}
+                        className={cn('msg-bolha-wrap', propria && 'msg-bolha-wrap--minha')}
                       >
-                        <div className="painel-chat-msg-bloco">
-                          {!propria && (
-                            <span className="painel-chat-msg-autor">
-                              {m.perfis?.nome_completo ?? 'VIGMED'}
-                            </span>
-                          )}
-                          <div
-                            className={cn(
-                              'painel-chat-bolha',
-                              propria ? 'painel-chat-bolha--minha' : 'painel-chat-bolha--deles',
+                        {!propria && (
+                          <span className="msg-autor">{m.perfis?.nome_completo ?? 'VIGMED'}</span>
+                        )}
+                        <div className={cn('msg-bolha', propria ? 'msg-bolha--minha' : 'msg-bolha--deles')}>
+                          <p>{m.corpo}</p>
+                          <span className="msg-bolha-meta">
+                            {formatarDataHora(m.criado_em)}
+                            {propria && (
+                              <span title={m.lida ? 'Visualizada' : 'Enviada'}>
+                                {m.lida ? (
+                                  <Checks size={13} weight="bold" />
+                                ) : (
+                                  <Check size={13} weight="bold" />
+                                )}
+                              </span>
                             )}
-                          >
-                            <p className="painel-chat-bolha-texto">{m.corpo}</p>
-                            <span className="painel-chat-meta">
-                              {formatarDataHora(m.criado_em)}
-                              {propria && (
-                                <span
-                                  className={cn('painel-chat-check', m.lida && 'painel-chat-check--lida')}
-                                  title={m.lida ? 'Visualizada' : 'Enviada'}
-                                  aria-label={m.lida ? 'Visualizada' : 'Enviada'}
-                                >
-                                  {m.lida
-                                    ? <CheckCheck size={13} strokeWidth={2.4} />
-                                    : <Check size={13} strokeWidth={2.4} />}
-                                </span>
-                              )}
-                            </span>
-                          </div>
+                          </span>
                         </div>
                         {modoAdmin && (
-                          <div className="painel-chat-msg-acoes">
+                          <div className="msg-bolha-acoes">
                             <ConfirmacaoExclusaoInline
                               ariaLabel="Excluir mensagem"
                               compacta
@@ -455,10 +478,13 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
                   <div ref={fimRef} />
                 </div>
 
-                <footer className="painel-chat-composer">
-                  <input
-                    className="painel-chat-input"
-                    placeholder="Escreva uma mensagem..."
+                <footer className="msg-composer">
+                  <textarea
+                    ref={textoRef}
+                    id="mensagem-texto"
+                    className="msg-composer-input"
+                    placeholder="Escreva uma mensagem…"
+                    rows={1}
                     value={texto}
                     onChange={(e) => definirTexto(e.target.value)}
                     onKeyDown={(e) => {
@@ -468,26 +494,34 @@ export function PainelMensagens({ conversasIniciais, empresas, perfilId, modoAdm
                       }
                     }}
                   />
-                  <Button
-                    variant="primary"
-                    size="sm"
+                  <button
+                    type="button"
+                    className="msg-composer-enviar"
                     onClick={aoEnviar}
-                    loading={pendente('enviar')}
                     disabled={!texto.trim() || pendente('enviar')}
                     aria-label="Enviar mensagem"
                   >
-                    <Send size={14} />
-                  </Button>
+                    <PaperPlaneTilt size={18} weight="fill" />
+                  </button>
                 </footer>
               </>
             ) : (
-              <div className="painel-chat-placeholder">
-                <MessageSquare size={28} strokeWidth={1.5} />
-                <p>
-                  {conversas.length === 0
-                    ? (modoAdmin ? 'Crie uma conversa para começar.' : 'Nenhuma conversa no momento.')
-                    : 'Selecione uma conversa'}
-                </p>
+              <div className="msg-vazio-thread">
+                <Vazio
+                  titulo={
+                    conversas.length === 0
+                      ? modoAdmin
+                        ? 'Crie uma conversa'
+                        : 'Sem conversas'
+                      : 'Selecione uma conversa'
+                  }
+                  descricao={
+                    conversas.length === 0
+                      ? undefined
+                      : 'Escolha um item na lista ao lado.'
+                  }
+                  compacto
+                />
               </div>
             )}
           </section>

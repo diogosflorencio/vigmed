@@ -69,18 +69,18 @@ export default async function PaginaPostBlog({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <RegistroVisualizacaoBlog postId={post.id} />
 
-      <div className="min-h-dvh">
-        <header className="border-b border-[var(--glass-border)] glass-apple sticky top-0 z-30">
-          <div className="mx-auto max-w-3xl px-4 py-4 flex items-center justify-between">
-            <Link href={ROTAS.blog.home} className="text-sm font-medium text-primary hover:underline">
+      <div className="vig-blog-shell min-h-dvh">
+        <header className="vig-blog-header">
+          <div className="vig-blog-header-inner vig-blog-header-inner--estreito">
+            <Link href={ROTAS.blog.home} className="vig-blog-voltar">
               ← Blog VIGMED
             </Link>
           </div>
         </header>
 
-        <article className="mx-auto max-w-3xl px-4 py-10">
-          <header className="mb-8">
-            <time className="text-sm text-muted-foreground" dateTime={post.publicado_em ?? undefined}>
+        <article className="vig-blog-artigo">
+          <header className="vig-blog-artigo-cabecalho">
+            <time className="vig-blog-data" dateTime={post.publicado_em ?? undefined}>
               {post.publicado_em
                 ? new Date(post.publicado_em).toLocaleDateString('pt-BR', {
                     day: 'numeric',
@@ -89,34 +89,20 @@ export default async function PaginaPostBlog({ params }: Props) {
                   })
                 : ''}
             </time>
-            <h1 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight text-[var(--color-text-1)]">
-              {post.titulo}
-            </h1>
-            {post.resumo && (
-              <p className="mt-4 text-lg text-[var(--color-text-2)] leading-relaxed">{post.resumo}</p>
-            )}
+            <h1 className="vig-blog-artigo-titulo">{post.titulo}</h1>
+            {post.resumo && <p className="vig-blog-artigo-resumo">{post.resumo}</p>}
             {post.imagem_capa_url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.imagem_capa_url}
-                alt=""
-                className="mt-8 w-full rounded-2xl object-cover max-h-[420px]"
-              />
+              <img src={post.imagem_capa_url} alt="" className="vig-blog-artigo-capa" />
             )}
           </header>
 
-          <div
-            className="blog-prose"
-            dangerouslySetInnerHTML={{ __html: post.corpo_html }}
-          />
+          <div className="blog-prose vig-blog-prose" dangerouslySetInnerHTML={{ __html: post.corpo_html }} />
 
           {post.tags?.length > 0 && (
-            <footer className="mt-12 pt-8 border-t border-[var(--glass-border)] flex flex-wrap gap-2">
+            <footer className="vig-blog-artigo-tags">
               {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-3 py-1 rounded-full bg-[var(--glass-nav-active)] text-[var(--color-text-2)]"
-                >
+                <span key={tag} className="vig-selo vig-selo--padrao vig-blog-tag">
                   {tag}
                 </span>
               ))}

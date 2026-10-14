@@ -2,26 +2,25 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   nome: string
+  /** Só renderiza se houver URL real de foto */
+  url?: string | null
   tamanho?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
-function iniciais(nome: string): string {
-  const partes = nome.trim().split(/\s+/).filter(Boolean)
-  if (partes.length === 0) return '?'
-  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase()
-  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
-}
+/** Foto de perfil circular. Sem URL, não mostra nada. */
+export function Avatar({ nome, url, tamanho = 'md', className }: Props) {
+  if (!url) return null
 
-/** Avatar com iniciais, identidade VIGMED */
-export function Avatar({ nome, tamanho = 'md', className }: Props) {
   return (
-    <span
-      className={cn('vig-avatar', `vig-avatar--${tamanho}`, className)}
-      aria-hidden
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt=""
       title={nome}
-    >
-      {iniciais(nome)}
-    </span>
+      loading="lazy"
+      decoding="async"
+      className={cn('vig-avatar vig-avatar--foto', `vig-avatar--${tamanho}`, className)}
+    />
   )
 }

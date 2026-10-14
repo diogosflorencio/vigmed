@@ -11,7 +11,7 @@ interface PropsSecaoPainel {
 /** Container padrão de conteúdo do painel */
 export function SecaoPainel({ children, className }: PropsSecaoPainel) {
   return (
-    <div className={cn('vig-secao-painel flex flex-col gap-4', className)}>
+    <div className={cn('vig-secao-painel app-secao-painel flex flex-col', className)}>
       {children}
     </div>
   )

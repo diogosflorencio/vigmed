@@ -2,7 +2,6 @@
 
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -14,9 +13,11 @@ interface Props {
   rodape?: ReactNode
   className?: string
   largo?: boolean
+  /** Quase tela cheia, para documentos e fluxos densos */
+  telaCheia?: boolean
 }
 
-/** Modal padrão VIGMED */
+/** Modal: sheet no mobile, diálogo no desktop; fecha com Esc */
 export function Modal({
   aberto,
   onFechar,
@@ -26,6 +27,7 @@ export function Modal({
   rodape,
   className,
   largo,
+  telaCheia,
 }: Props) {
   useEffect(() => {
     if (!aberto) return
@@ -46,7 +48,12 @@ export function Modal({
   return createPortal(
     <div className="vig-modal-overlay" onClick={onFechar} role="presentation">
       <div
-        className={cn('vig-modal', largo && 'vig-modal--largo', className)}
+        className={cn(
+          'vig-modal',
+          largo && 'vig-modal--largo',
+          telaCheia && 'vig-modal--tela',
+          className,
+        )}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -54,7 +61,7 @@ export function Modal({
       >
         {(titulo || descricao) && (
           <header className="vig-modal-cabecalho">
-            <div>
+            <div className="vig-modal-cabecalho-texto">
               {titulo && (
                 <h2 id="vig-modal-titulo" className="vig-modal-titulo">
                   {titulo}
@@ -63,7 +70,7 @@ export function Modal({
               {descricao && <p className="vig-modal-descricao">{descricao}</p>}
             </div>
             <button type="button" className="vig-modal-fechar" onClick={onFechar} aria-label="Fechar">
-              <IconeAnimado nome="x" tamanho={16} />
+              <span aria-hidden>×</span>
             </button>
           </header>
         )}

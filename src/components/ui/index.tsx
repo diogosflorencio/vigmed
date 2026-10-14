@@ -1,6 +1,6 @@
 'use client'
 
-import { cloneElement, isValidElement, type ComponentProps, type ReactElement, type ReactNode } from 'react'
+import { cloneElement, createContext, isValidElement, useContext, type ComponentProps, type ReactElement, type ReactNode } from 'react'
 import { Botao, type VarianteBotao } from '@/components/vig/Botao'
 import { Campo } from '@/components/vig/Campo'
 import { AreaTexto } from '@/components/vig/AreaTexto'
@@ -9,6 +9,7 @@ import { Selo } from '@/components/vig/Selo'
 import { Avatar as AvatarVig } from '@/components/vig/Avatar'
 import { Cartao } from '@/components/vig/Cartao'
 import { Modal } from '@/components/vig/Modal'
+import { Vazio } from '@/components/vig/Vazio'
 import { cn } from '@/lib/utils'
 
 export { Botao, Campo, AreaTexto, Seletor, Selo, Cartao, Modal }
@@ -17,6 +18,7 @@ export { Metrica } from '@/components/vig/Metrica'
 export { ChipSeletor } from '@/components/vig/ChipSeletor'
 export { FlipBox } from '@/components/vig/FlipBox'
 export { PaginaHero } from '@/components/vig/PaginaHero'
+export { Confirm } from '@/components/ui/confirmar'
 
 type VarianteBotaoLegado = 'primary' | 'ghost' | 'danger' | 'outline'
 type TamanhoBotaoLegado = 'sm' | 'md' | 'lg'
@@ -93,9 +95,19 @@ export const Textarea = AreaTexto
 /** @deprecated Preferir `Selo` */
 export const Badge = Selo
 
-/** @deprecated Preferir `AvatarVig`, aceita `name` ou `nome` */
-export function Avatar({ name, nome, size = 'md' }: { name?: string; nome?: string; size?: 'sm' | 'md' | 'lg' }) {
-  return <AvatarVig nome={nome ?? name ?? '?'} tamanho={size} />
+/** @deprecated Preferir `AvatarVig`. Sem `url`, não renderiza nada. */
+export function Avatar({
+  name,
+  nome,
+  url,
+  size = 'md',
+}: {
+  name?: string
+  nome?: string
+  url?: string | null
+  size?: 'sm' | 'md' | 'lg'
+}) {
+  return <AvatarVig nome={nome ?? name ?? '?'} url={url} tamanho={size} />
 }
 
 export function Label({ children, htmlFor, className }: { children: ReactNode; htmlFor?: string; className?: string }) {
@@ -166,7 +178,6 @@ export function CardAction({ children }: { children: ReactNode }) {
 }
 
 export function Empty({
-  icon,
   title,
   description,
   action,
@@ -176,17 +187,14 @@ export function Empty({
   description?: string
   action?: ReactNode
 }) {
-  return (
-    <div className="vig-vazio vig-vazio--grande">
-      {icon}
-      <p className="vig-vazio-titulo">{title}</p>
-      {description && <p className="vig-vazio-desc">{description}</p>}
-      {action}
-    </div>
-  )
+  return <Vazio titulo={title} descricao={description} acao={action} />
 }
 
-/** Dialog compat, usa Modal VIGMED por baixo */
+/** Dialog compat, renderiza Modal VIGMED com overlay */
+const DialogCtx = createContext<{ aberto: boolean; onOpenChange?: (aberto: boolean) => void }>({
+  aberto: false,
+})
+
 export function Dialog({
   open,
   onOpenChange,
@@ -196,8 +204,11 @@ export function Dialog({
   onOpenChange?: (open: boolean) => void
   children: ReactNode
 }) {
-  if (!open) return null
-  return <>{children}</>
+  return (
+    <DialogCtx.Provider value={{ aberto: !!open, onOpenChange }}>
+      {children}
+    </DialogCtx.Provider>
+  )
 }
 
 export function DialogContent({
@@ -209,7 +220,13 @@ export function DialogContent({
   className?: string
   showCloseButton?: boolean
 }) {
-  return <div className={cn('vig-dialog-content', className)}>{children}</div>
+  const { aberto, onOpenChange } = useContext(DialogCtx)
+  if (!aberto) return null
+  return (
+    <Modal aberto={aberto} onFechar={() => onOpenChange?.(false)} className={className}>
+      {children}
+    </Modal>
+  )
 }
 
 export function DialogHeader({ children, className }: { children: ReactNode; className?: string }) {

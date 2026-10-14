@@ -134,11 +134,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 
   const prefsExibidas = ehRotaPublica(pathname) ? PREFERENCIAS_TEMA_PUBLICO : prefs
+  // Antes do mount, espelha o SSR (system sem window = claro) para não quebrar a hidratação.
+  // O script inline já pinta o html; após montado sincronizamos com preferência real.
+  const temaResolvido: Tema = montado ? modoResolvido(prefsExibidas) : 'light'
 
   return (
     <ContextoTema.Provider
       value={{
-        tema: modoResolvido(prefsExibidas),
+        tema: temaResolvido,
         modo: prefsExibidas.modo,
         temaVisual: prefsExibidas.temaVisual,
         modeloMenu: prefsExibidas.modeloMenu,

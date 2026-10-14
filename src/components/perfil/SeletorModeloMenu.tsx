@@ -4,34 +4,23 @@ import { useTheme } from '@/contexts/ThemeContext'
 import type { ModeloMenu } from '@/lib/tema/tipos'
 import { cn } from '@/lib/utils'
 
-const MODELOS: { id: ModeloMenu; rotulo: string; descricao: string }[] = [
-  {
-    id: 'dock',
-    rotulo: 'Dock inferior',
-    descricao: 'Navegação flutuante na parte de baixo, ideal para telas largas e uso rápido.',
-  },
-  {
-    id: 'lateral',
-    rotulo: 'Barra lateral',
-    descricao: 'Menu fixo à esquerda com todos os itens visíveis, estilo clássico de dashboard.',
-  },
-  {
-    id: 'superior',
-    rotulo: 'Menu superior',
-    descricao: 'Barra horizontal no topo com dropdowns, mais espaço vertical para o conteúdo.',
-  },
+const MODELOS: { id: ModeloMenu; rotulo: string }[] = [
+  { id: 'dock', rotulo: 'Inferior' },
+  { id: 'lateral', rotulo: 'Esquerda' },
+  { id: 'direita', rotulo: 'Direita' },
+  { id: 'superior', rotulo: 'Superior' },
 ]
 
 interface Props {
   className?: string
 }
 
-/** Seletor visual do layout de navegação com mini-previews */
+/** Seletor compacto do layout de navegação */
 export function SeletorModeloMenu({ className }: Props) {
   const { modeloMenu, definirModeloMenu } = useTheme()
 
   return (
-    <div className={cn('vig-menu-preview-grid', className)}>
+    <div className={cn('vig-menu-preview-grid', className)} role="group" aria-label="Modelo do menu">
       {MODELOS.map((m) => {
         const ativo = modeloMenu === m.id
         return (
@@ -48,7 +37,6 @@ export function SeletorModeloMenu({ className }: Props) {
             </div>
             <div className="vig-menu-preview-texto">
               <strong>{m.rotulo}</strong>
-              <span>{m.descricao}</span>
             </div>
           </button>
         )

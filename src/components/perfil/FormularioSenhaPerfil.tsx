@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { Botao } from '@/components/vig/Botao'
-import { Campo } from '@/components/vig/Campo'
+import { CampoSenha } from '@/components/vig/CampoSenha'
 import { Cartao } from '@/components/vig/Cartao'
 import { redefinirSenha } from '@/lib/auth/acoes'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
@@ -47,17 +47,15 @@ export function FormularioSenhaPerfil({ modoRecuperacao = false }: Props) {
       }
     >
       <div className="space-y-4 max-w-md">
-        <Campo
+        <CampoSenha
           rotulo="Nova senha"
-          type="password"
           value={novaSenha}
           onChange={(e) => definirNovaSenha(e.target.value)}
           autoComplete="new-password"
           minLength={8}
         />
-        <Campo
+        <CampoSenha
           rotulo="Confirmar senha"
-          type="password"
           value={confirmar}
           onChange={(e) => definirConfirmar(e.target.value)}
           autoComplete="new-password"

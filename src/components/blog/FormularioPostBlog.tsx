@@ -4,11 +4,15 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { ArrowLeft, ExternalLink, Save, Send } from 'lucide-react'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { EditorBlog } from '@/components/blog/EditorBlog'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
-import { Button, Input, Label, Textarea } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { Campo } from '@/components/vig/Campo'
+import { AreaTexto } from '@/components/vig/AreaTexto'
+import { Seletor } from '@/components/vig/Seletor'
+import { Cartao } from '@/components/vig/Cartao'
 import { criarPostBlog, atualizarPostBlog } from '@/lib/blog/acoes'
 import { gerarSlug } from '@/lib/blog/gerar-slug'
 import { ROTAS, hrefPublico } from '@/lib/rotas'
@@ -127,35 +131,32 @@ export function FormularioPostBlog({ post }: Props) {
             <ArrowLeft size={16} />
           </Link>
           <CabecalhoPagina
+            rotulo="Blog"
             titulo={editando ? 'Editar post' : 'Novo post'}
             descricao="Redija, adicione imagens e publique no blog público."
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" disabled={pendente} onClick={() => salvar(false)}>
-            <Save size={16} />
+          <Botao variante="secundario" disabled={pendente} onClick={() => salvar(false)}>
             Salvar rascunho
-          </Button>
-          <Button disabled={pendente} onClick={() => salvar(true)}>
-            <Send size={16} />
+          </Botao>
+          <Botao disabled={pendente} carregando={pendente} onClick={() => salvar(true)}>
             Publicar
-          </Button>
+          </Botao>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div className="space-y-2">
-            <Label>Título</Label>
-            <Input
-              value={titulo}
-              onChange={(e) => {
-                definirTitulo(e.target.value)
-                if (!slug || slug === gerarSlug(titulo)) definirSlug(gerarSlug(e.target.value))
-              }}
-              placeholder="Título do artigo"
-            />
-          </div>
+          <Campo
+            rotulo="Título"
+            value={titulo}
+            onChange={(e) => {
+              definirTitulo(e.target.value)
+              if (!slug || slug === gerarSlug(titulo)) definirSlug(gerarSlug(e.target.value))
+            }}
+            placeholder="Título do artigo"
+          />
 
           <EditorBlog
             conteudo={corpoHtml}
@@ -166,66 +167,63 @@ export function FormularioPostBlog({ post }: Props) {
         </div>
 
         <aside className="space-y-4">
-          <div className="surface-card p-4 space-y-3">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Publicação</Label>
-            <div className="space-y-2">
-              <Label className="text-sm">Slug (URL)</Label>
-              <Input value={slug} onChange={(e) => definirSlug(gerarSlug(e.target.value))} />
-              <a
-                href={urlBlog}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                {slugPreview}
-                <ExternalLink size={12} />
-              </a>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Status</Label>
-              <select
-                className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm"
-                value={status}
-                onChange={(e) => definirStatus(e.target.value as StatusPostBlog)}
-              >
-                <option value="rascunho">Rascunho</option>
-                <option value="publicado">Publicado</option>
-                <option value="arquivado">Arquivado</option>
-              </select>
-            </div>
-          </div>
+          <Cartao titulo="Publicação" className="!p-4 space-y-3">
+            <Campo
+              rotulo="Slug (URL)"
+              value={slug}
+              onChange={(e) => definirSlug(gerarSlug(e.target.value))}
+            />
+            <a
+              href={urlBlog}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-[var(--vig-teal)] hover:underline -mt-1"
+            >
+              {slugPreview}
+              <ExternalLink size={12} />
+            </a>
+            <Seletor
+              rotulo="Status"
+              value={status}
+              onChange={(e) => definirStatus(e.target.value as StatusPostBlog)}
+              opcoes={[
+                { valor: 'rascunho', rotulo: 'Rascunho' },
+                { valor: 'publicado', rotulo: 'Publicado' },
+                { valor: 'arquivado', rotulo: 'Arquivado' },
+              ]}
+            />
+          </Cartao>
 
-          <div className="surface-card p-4 space-y-3">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">SEO</Label>
-            <div className="space-y-2">
-              <Label className="text-sm">Meta título</Label>
-              <Input value={metaTitulo} onChange={(e) => definirMetaTitulo(e.target.value)} placeholder={titulo || 'Título para Google'} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Meta descrição</Label>
-              <Textarea
-                value={metaDescricao}
-                onChange={(e) => definirMetaDescricao(e.target.value)}
-                rows={3}
-                placeholder="Resumo para resultados de busca"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Tags (vírgula)</Label>
-              <Input value={tagsTexto} onChange={(e) => definirTagsTexto(e.target.value)} placeholder="saúde, documentos, compliance" />
-            </div>
-          </div>
+          <Cartao titulo="SEO" className="!p-4 space-y-3">
+            <Campo
+              rotulo="Meta título"
+              value={metaTitulo}
+              onChange={(e) => definirMetaTitulo(e.target.value)}
+              placeholder={titulo || 'Título para Google'}
+            />
+            <AreaTexto
+              rotulo="Meta descrição"
+              value={metaDescricao}
+              onChange={(e) => definirMetaDescricao(e.target.value)}
+              rows={3}
+              placeholder="Resumo para resultados de busca"
+            />
+            <Campo
+              rotulo="Tags (vírgula)"
+              value={tagsTexto}
+              onChange={(e) => definirTagsTexto(e.target.value)}
+              placeholder="saúde, documentos, compliance"
+            />
+          </Cartao>
 
-          <div className="surface-card p-4 space-y-3">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Capa</Label>
-            <p className="text-xs text-muted-foreground">Imagem de destaque e compartilhamento social.</p>
+          <Cartao titulo="Capa" descricao="Imagem de destaque e compartilhamento social." className="!p-4 space-y-3">
             {imagemCapaUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imagemCapaUrl} alt="Capa" className="w-full rounded-xl object-cover max-h-40" />
             )}
-            <Button
+            <Botao
               type="button"
-              variant="outline"
+              variante="secundario"
               className="w-full"
               onClick={() => {
                 const input = document.createElement('input')
@@ -239,18 +237,18 @@ export function FormularioPostBlog({ post }: Props) {
               }}
             >
               {imagemCapaUrl ? 'Trocar capa' : 'Enviar capa'}
-            </Button>
-          </div>
+            </Botao>
+          </Cartao>
 
-          <div className="surface-card p-4 space-y-2">
-            <Label className="text-sm">Resumo</Label>
-            <Textarea
+          <Cartao className="!p-4">
+            <AreaTexto
+              rotulo="Resumo"
               value={resumo}
               onChange={(e) => definirResumo(e.target.value)}
               rows={4}
               placeholder="Breve descrição exibida na listagem"
             />
-          </div>
+          </Cartao>
         </aside>
       </div>
     </SecaoPainel>

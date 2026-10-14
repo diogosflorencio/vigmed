@@ -9,22 +9,14 @@ interface Props {
   destaque?: boolean
 }
 
-/** Cartão com bordas suaves e sombra da identidade VIGMED */
+/** Superfície operacional do painel, plana e com hierarquia clara */
 export function Cartao({ titulo, descricao, children, className, destaque }: Props) {
   return (
-    <article
-      className={cn(
-        'vig-card rounded-2xl border bg-[var(--color-surface)] p-5 transition-shadow duration-300',
-        destaque
-          ? 'border-[var(--vig-teal)]/30 shadow-[0_12px_40px_rgba(13,148,136,0.12)]'
-          : 'border-[var(--color-border)] shadow-[0_4px_24px_rgba(15,39,68,0.06)] hover:shadow-[0_8px_32px_rgba(15,39,68,0.1)]',
-        className,
-      )}
-    >
+    <article className={cn('vig-card vm-card', destaque && 'vig-card--destaque', className)}>
       {(titulo || descricao) && (
-        <header className="mb-4 pb-3 border-b border-[var(--color-border)]">
-          {titulo && <h3 className="text-base font-semibold text-[var(--vig-navy)]">{titulo}</h3>}
-          {descricao && <p className="mt-1 text-xs text-[var(--color-text-3)]">{descricao}</p>}
+        <header className="vig-card-cabecalho vm-card-cabecalho">
+          {titulo && <h3>{titulo}</h3>}
+          {descricao && <p>{descricao}</p>}
         </header>
       )}
       {children}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { exigirAutenticacao, registrarAuditoria } from '@/lib/auth/sessao'
+import { normalizarEmail } from '@/lib/auth/convites'
 import { criarClienteSupabaseAdmin } from '@/lib/supabase/admin'
 import { criarClienteSupabaseServidor } from '@/lib/supabase/servidor'
 import { ROTAS } from '@/lib/rotas'
@@ -88,8 +89,48 @@ export async function salvarEmpresa(dados: {
       recursoId: data.id,
       detalhes: { nome: payload.nome_fantasia },
     })
+
+    let conviteCriado = false
+    let linkConvite: string | undefined
+    const emailConvite = normalizarEmail(dados.email)
+    if (emailConvite.includes('@')) {
+      const { data: conviteExistente } = await admin
+        .from('convites_acesso')
+        .select('id')
+        .ilike('email', emailConvite)
+        .is('usado_em', null)
+        .eq('ativo', true)
+        .maybeSingle()
+
+      if (!conviteExistente) {
+        const { error: erroConvite } = await admin.from('convites_acesso').insert({
+          email: emailConvite,
+          nome_completo: dados.responsavel?.trim() || dados.nomeFantasia.trim(),
+          papel: 'administrador_empresa',
+          ambiente: 'docs',
+          empresa_id: data.id,
+          convidado_por: perfil.id,
+          observacoes: 'Convite automático ao cadastrar empresa',
+        })
+        if (!erroConvite) {
+          conviteCriado = true
+          linkConvite = `/cadastro?email=${encodeURIComponent(emailConvite)}`
+
+          const { notificarConviteCriado } = await import('@/lib/email/convites')
+          await notificarConviteCriado({
+            email: emailConvite,
+            nome: dados.responsavel?.trim() || dados.nomeFantasia.trim(),
+            ambiente: 'docs',
+            linkRelativo: linkConvite,
+            origem: 'cadastro de empresa',
+          })
+        }
+      }
+    }
+
     revalidatePath(ROTAS.adm.empresas)
-    return { sucesso: true, id: data.id }
+    revalidatePath(ROTAS.adm.usuarios)
+    return { sucesso: true, id: data.id, conviteCriado, linkConvite }
   }
 
   revalidatePath(ROTAS.adm.empresas)

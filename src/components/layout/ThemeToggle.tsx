@@ -3,7 +3,6 @@
 import { forwardRef } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string
@@ -15,14 +14,22 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, Props>(function ThemeTo
 ) {
   const { tema, alternarTema, montado } = useTheme()
 
+  const rotulo = !montado
+    ? 'Alternar tema'
+    : tema === 'dark'
+      ? 'Ativar tema claro'
+      : 'Ativar tema escuro'
+
   return (
     <button
       ref={ref}
       type="button"
       onClick={alternarTema}
-      aria-label={tema === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+      aria-label={rotulo}
+      title={rotulo}
+      suppressHydrationWarning
       className={cn(
-        'inline-flex items-center justify-center',
+        'theme-toggle inline-flex items-center justify-center',
         'text-(--color-text-2)',
         'transition-colors hover:text-(--color-text-1)',
         className,
@@ -34,11 +41,12 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, Props>(function ThemeTo
       {...rest}
     >
       {!montado ? (
-        <span className="h-4 w-4" />
-      ) : tema === 'dark' ? (
-        <IconeAnimado nome="sun" tamanho={18} />
+        <span className="theme-toggle-ico" aria-hidden />
       ) : (
-        <IconeAnimado nome="moon" tamanho={18} />
+        <span
+          className={cn('theme-toggle-ico', tema === 'dark' ? 'theme-toggle-ico--sol' : 'theme-toggle-ico--lua')}
+          aria-hidden
+        />
       )}
     </button>
   )

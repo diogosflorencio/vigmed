@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@/components/vig/Modal'
+import { createPortal } from 'react-dom'
 import { Botao } from '@/components/vig/Botao'
 
 interface ConfirmProps {
@@ -13,7 +13,7 @@ interface ConfirmProps {
   loading?: boolean
 }
 
-/** Diálogo de confirmação padrão VIGMED */
+/** Confirmação em barra fixa na tela (sem modal). */
 export function Confirm({
   open,
   onClose,
@@ -23,20 +23,19 @@ export function Confirm({
   confirmLabel = 'Confirmar',
   loading,
 }: ConfirmProps) {
-  return (
-    <Modal
-      aberto={open}
-      onFechar={onClose}
-      titulo={title}
-      descricao={message}
-      rodape={
-        <>
-          <Botao variante="fantasma" onClick={onClose} filho="Cancelar" />
-          <Botao variante="perigo" carregando={loading} onClick={onConfirm} filho={confirmLabel} />
-        </>
-      }
-    >
-      <span className="sr-only">{message}</span>
-    </Modal>
+  if (!open || typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="vm-confirm-barra" role="alertdialog" aria-modal="true" aria-labelledby="vm-confirm-titulo">
+      <div className="vm-confirm-texto">
+        <strong id="vm-confirm-titulo">{title}</strong>
+        <p>{message}</p>
+      </div>
+      <div className="vm-confirm-acoes">
+        <Botao variante="fantasma" onClick={onClose} filho="Cancelar" />
+        <Botao variante="perigo" carregando={loading} onClick={onConfirm} filho={confirmLabel} />
+      </div>
+    </div>,
+    document.body,
   )
 }

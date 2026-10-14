@@ -19,25 +19,25 @@ export interface PropsBotao extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantes: Record<VarianteBotao, string> = {
   primario:
-    'bg-[var(--vig-navy)] text-white border border-[var(--vig-navy)] hover:bg-[var(--vig-navy-soft)] shadow-[0_4px_14px_rgba(15,39,68,0.25)]',
+    'bg-(--vig-teal) text-white border border-(--vig-teal) hover:bg-(--vig-teal-soft) hover:border-(--vig-teal-soft)',
   secundario:
-    'bg-[var(--color-surface)] text-[var(--vig-navy)] border border-[var(--color-border)] hover:border-[var(--vig-teal)] hover:text-[var(--vig-teal)]',
+    'bg-(--app-elevated,var(--color-surface)) text-(--app-text,var(--vig-navy)) border border-(--color-border) hover:bg-(--color-surface-2)',
   contorno:
-    'bg-transparent text-[var(--vig-navy)] border-2 border-[var(--vig-teal)] hover:bg-[var(--vig-teal)] hover:text-white',
-  fantasma: 'bg-transparent text-[var(--vig-navy)] hover:bg-[var(--color-surface-2)]',
-  teal: 'bg-[var(--vig-teal)] text-white border border-[var(--vig-teal)] hover:bg-[var(--vig-teal-soft)] shadow-[0_4px_14px_rgba(13,148,136,0.3)]',
+    'bg-transparent text-(--vig-teal) border border-(--vig-teal) hover:bg-(--app-accent-soft,color-mix(in srgb,var(--vig-teal) 10%,transparent))',
+  fantasma: 'bg-transparent text-(--app-text-2,var(--vig-navy)) hover:bg-(--color-surface-2)',
+  teal: 'bg-(--vig-teal) text-white border border-(--vig-teal) hover:bg-(--vig-teal-soft)',
   perigo:
-    'bg-[#b42318] text-white border border-[#b42318] hover:bg-[#991b1b] shadow-[0_4px_14px_rgba(180,35,24,0.25)]',
+    'bg-(--color-danger) text-white border border-(--color-danger) hover:brightness-95',
 }
 
 const tamanhos: Record<Tamanho, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 min-w-[2rem]',
-  md: 'h-10 px-5 text-sm gap-2 min-w-[2.5rem]',
-  lg: 'h-12 px-7 text-sm gap-2.5 font-semibold',
+  sm: 'h-9 px-3.5 text-xs gap-1.5 min-w-9',
+  md: 'h-11 px-4 text-sm gap-2 min-w-11',
+  lg: 'h-12 px-6 text-sm gap-2 font-semibold',
 }
 
 const classeBase =
-  'vig-btn relative inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--vig-teal)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
+  'vig-btn relative inline-flex items-center justify-center font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--vig-teal) focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
 
 function Spinner() {
   return <span className="vig-btn-spinner" aria-hidden />
@@ -58,6 +58,7 @@ export function Botao({
   ...props
 }: PropsBotao) {
   const texto = filho ?? children
+  const temTexto = texto != null && texto !== ''
 
   const classes = cn(
     classeBase,
@@ -70,7 +71,7 @@ export function Botao({
   const conteudo = (
     <>
       {carregando ? <Spinner /> : icone}
-      {texto != null && texto !== '' && <span>{texto}</span>}
+      {temTexto && <span>{texto}</span>}
     </>
   )
 
@@ -90,7 +91,7 @@ export function Botao({
   }
 
   return (
-    <button type={type} className={classes} disabled={disabled || carregando} {...props}>
+    <button type={type} className={classes} disabled={disabled || carregando} aria-busy={carregando || undefined} {...props}>
       {conteudo}
     </button>
   )

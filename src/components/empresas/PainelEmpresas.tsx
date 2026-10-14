@@ -3,16 +3,16 @@
 import { Fragment, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, ChevronDown, ChevronUp, FolderOpen, Plus, Search, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
 import { Botao } from '@/components/vig/Botao'
+import { Vazio } from '@/components/vig/Vazio'
 import { Campo } from '@/components/vig/Campo'
 import { Metrica } from '@/components/vig/Metrica'
 import { Selo, seloDeVarianteShadcn } from '@/components/vig/Selo'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { salvarEmpresa } from '@/lib/empresas/acoes'
 import { hrefPublico, ROTAS } from '@/lib/rotas'
 import type { ConsumoArmazenamentoEmpresa, TotaisArmazenamentoPlataforma } from '@/lib/documentos/armazenamento'
@@ -85,7 +85,11 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
     iniciarTransicao(async () => {
       const resultado = await salvarEmpresa({ ...form })
       if (resultado.erro) { toast.error(resultado.erro); return }
-      toast.success('Empresa criada.')
+      if (resultado.conviteCriado) {
+        toast.success('Empresa criada. Convite enviado ao e-mail cadastrado. Acesse Usuários para copiar o link.')
+      } else {
+        toast.success('Empresa criada.')
+      }
       fecharNova()
       if (resultado.id) router.push(hrefPublico(ROTAS.adm.empresa(resultado.id)))
       else router.refresh()
@@ -99,24 +103,22 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
         rotulo="Administração"
         titulo="Empresas"
         descricao="Clientes cadastrados e consumo de armazenamento na plataforma."
-        icone={<IconeAnimado nome="building" tamanho={28} />}
         acoes={
           criando ? (
-            <Botao variante="fantasma" tamanho="sm" onClick={fecharNova} icone={<X size={15} />} filho="Fechar" />
+            <Botao variante="fantasma" tamanho="sm" onClick={fecharNova} filho="Fechar" />
           ) : (
-            <Botao variante="teal" tamanho="sm" onClick={abrirNova} icone={<Plus size={15} />} filho="Nova empresa" />
+            <Botao variante="teal" tamanho="sm" onClick={abrirNova} filho="Nova empresa" />
           )
         }
       />
 
       <RevelarScroll atraso={0.03}>
         <div className="vig-metrica-grid vig-metrica-grid--3">
-          <Metrica rotulo="Empresas listadas" valor={empresas.length} icone={<IconeAnimado nome="building" tamanho={16} />} />
-          <Metrica rotulo="Ativas" valor={empresasIniciais.filter((e) => e.status === 'ativo').length} destaque icone={<IconeAnimado nome="check-circle" tamanho={16} />} />
+          <Metrica rotulo="Empresas listadas" valor={empresas.length} />
+          <Metrica rotulo="Ativas" valor={empresasIniciais.filter((e) => e.status === 'ativo').length} destaque />
           <Metrica
             rotulo="Armazenamento total"
             valor={formatarBytes(totaisArmazenamento.total)}
-            icone={<IconeAnimado nome="hard-drive" tamanho={16} />}
           />
         </div>
       </RevelarScroll>
@@ -124,10 +126,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
       {criando && (
         <RevelarScroll>
           <form onSubmit={aoSalvar} className="painel-form-lateral mb-4">
-            <div className="flex items-center gap-2">
-              <Building2 size={16} className="text-(--color-text-2)" />
-              <span className="painel-form-titulo">Nova empresa</span>
-            </div>
+            <span className="painel-form-titulo">Nova empresa</span>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Campo rotulo="Razão social" value={form.razaoSocial} onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })} placeholder="Razão social Ltda" required />
@@ -140,7 +139,7 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
 
             <div className="flex flex-wrap justify-end gap-2">
               <Botao type="button" variante="secundario" tamanho="sm" onClick={fecharNova} disabled={pendente} filho="Cancelar" />
-              <Botao type="submit" variante="primario" tamanho="sm" disabled={pendente} icone={<Plus size={14} />} filho="Criar empresa" />
+              <Botao type="submit" variante="primario" tamanho="sm" disabled={pendente} filho="Criar empresa" />
             </div>
           </form>
         </RevelarScroll>
@@ -224,11 +223,11 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
                         </td>
                         <td>
                           <div className="flex justify-end gap-1">
-                            <Link href={hrefPublico(ROTAS.adm.empresa(empresa.id))} className="tabela-acao" title="Editar">
-                              <Building2 size={13} />
+                            <Link href={hrefPublico(ROTAS.adm.empresa(empresa.id))} className="text-xs font-medium text-(--vig-teal) hover:underline">
+                              Gerenciar
                             </Link>
-                            <Link href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))} className="tabela-acao" title="Documentos">
-                              <FolderOpen size={13} />
+                            <Link href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))} className="ml-2 text-xs font-medium text-(--color-text-2) hover:underline">
+                              Documentos
                             </Link>
                           </div>
                         </td>
@@ -277,10 +276,11 @@ export function PainelEmpresas({ empresasIniciais, consumoPorEmpresa, totaisArma
           </div>
 
           {empresas.length === 0 && (
-            <div className="painel-vazio">
-              <Building2 size={22} style={{ opacity: 0.35 }} />
-              Nenhuma empresa encontrada.
-            </div>
+            <Vazio
+              titulo="Nenhuma empresa encontrada"
+              descricao="Cadastre a primeira empresa ou ajuste os filtros de busca."
+              compacto
+            />
           )}
         </div>
       </RevelarScroll>

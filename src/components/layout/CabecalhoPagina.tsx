@@ -16,7 +16,7 @@ interface PropsCabecalhoPagina {
   hero?: boolean
 }
 
-/** Identificação da página, heading simples ou hero VIGMED */
+/** Identificação da página, heading editorial ou hero VIGMED */
 export function CabecalhoPagina({
   titulo,
   descricao,
@@ -41,13 +41,13 @@ export function CabecalhoPagina({
 
   return (
     <RevelarScroll>
-      <header className={cn('vig-page-heading', className)}>
-        <div className="vig-page-heading-main">
-          {rotulo && <p className="vig-landing-kicker">{rotulo}</p>}
-          <h1>{titulo}</h1>
-          {descricao && <p>{descricao}</p>}
+      <header className={cn('vig-page-heading vm-page-head', className)}>
+        <div className="vig-page-heading-main vm-page-head-main">
+          {rotulo && <p className="vig-landing-kicker vm-page-head-kicker">{rotulo}</p>}
+          <h1 className="vm-page-head-titulo">{titulo}</h1>
+          {descricao && <p className="vm-page-head-texto">{descricao}</p>}
         </div>
-        {acoes && <div className="vig-page-heading-acoes">{acoes}</div>}
+        {acoes && <div className="vig-page-heading-acoes vm-page-head-acoes">{acoes}</div>}
       </header>
     </RevelarScroll>
   )

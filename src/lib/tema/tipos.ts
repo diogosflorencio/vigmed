@@ -7,9 +7,9 @@ export type IdTemaVisual = 'vigmed' | 'banana' | 'limao' | 'azulao' | 'acai'
 export const TEMAS_VISUAIS_VALIDOS: IdTemaVisual[] = ['vigmed', 'banana', 'limao', 'azulao', 'acai']
 
 /** Layout da navegação do painel */
-export type ModeloMenu = 'dock' | 'lateral' | 'superior'
+export type ModeloMenu = 'dock' | 'lateral' | 'direita' | 'superior'
 
-export const MODELOS_MENU_VALIDOS: ModeloMenu[] = ['dock', 'lateral', 'superior']
+export const MODELOS_MENU_VALIDOS: ModeloMenu[] = ['dock', 'lateral', 'direita', 'superior']
 
 export interface PreferenciasAparencia {
   modo: ModoTema
@@ -20,7 +20,7 @@ export interface PreferenciasAparencia {
 export const PREFERENCIAS_PADRAO: PreferenciasAparencia = {
   modo: 'system',
   temaVisual: 'vigmed',
-  modeloMenu: 'dock',
+  modeloMenu: 'lateral',
 }
 
 export function normalizarIdTemaVisual(valor: string | undefined | null): IdTemaVisual {

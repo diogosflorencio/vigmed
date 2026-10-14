@@ -4,11 +4,16 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Check, FolderOpen, Trash2, UserPlus, X } from 'lucide-react'
+import { ArrowLeft, Check, UserPlus, X } from 'lucide-react'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { Badge, Button, Input } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { Campo } from '@/components/vig/Campo'
+import { Seletor } from '@/components/vig/Seletor'
+import { Selo } from '@/components/vig/Selo'
+import { Metrica } from '@/components/vig/Metrica'
+import { Cartao } from '@/components/vig/Cartao'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
 import { excluirEmpresa, salvarEmpresa } from '@/lib/empresas/acoes'
 import { convidarUsuario } from '@/lib/usuarios/acoes'
@@ -89,9 +94,13 @@ export function PainelEmpresaDetalhe({ empresa, consumo, perfis, convites }: Pro
       const link = `${window.location.origin}${path}`
       try {
         await navigator.clipboard.writeText(link)
-        toast.success('E-mail autorizado. Link copiado.')
+        toast.success(
+          r.emailEnviado
+            ? 'Convite criado, link copiado e e-mail enviado.'
+            : 'E-mail autorizado. Link copiado.',
+        )
       } catch {
-        toast.success(r.mensagem ?? 'E-mail autorizado.')
+        toast.success(r.emailEnviado ? 'Convite criado e e-mail enviado.' : (r.mensagem ?? 'E-mail autorizado.'))
       }
       definirEmailConvite('')
       definirNomeConvite('')
@@ -123,98 +132,136 @@ export function PainelEmpresaDetalhe({ empresa, consumo, perfis, convites }: Pro
       </div>
 
       <CabecalhoPagina
+        rotulo="Empresa"
         titulo={empresa.nome_fantasia}
         descricao={`${formatarCnpj(empresa.cnpj)} · ${formatarBytes(consumo.total)} em arquivos`}
         acoes={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" render={<Link href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))} />}>
-              <FolderOpen size={14} />
+            <Botao
+              variante="secundario"
+              tamanho="sm"
+              href={hrefPublico(ROTAS.adm.empresaDocumentos(empresa.id))}
+            >
               Documentos
-            </Button>
+            </Botao>
             {excluindo?.tipo === 'empresa' ? (
               <div className="inline-flex items-center gap-0.5">
-                <Button type="button" variant="ghost" size="sm" className="text-emerald-600" disabled={pendente('excluir')} onClick={confirmarExclusao} aria-label="Confirmar exclusão da empresa">
-                  <Check size={15} />
-                </Button>
-                <Button type="button" variant="ghost" size="sm" disabled={pendente('excluir')} onClick={() => definirExcluindo(null)} aria-label="Cancelar">
-                  <X size={15} />
-                </Button>
+                <Botao
+                  type="button"
+                  variante="fantasma"
+                  tamanho="sm"
+                  className="text-emerald-600"
+                  disabled={pendente('excluir')}
+                  onClick={confirmarExclusao}
+                  aria-label="Confirmar exclusão da empresa"
+                  icone={<Check size={15} />}
+                />
+                <Botao
+                  type="button"
+                  variante="fantasma"
+                  tamanho="sm"
+                  disabled={pendente('excluir')}
+                  onClick={() => definirExcluindo(null)}
+                  aria-label="Cancelar"
+                  icone={<X size={15} />}
+                />
               </div>
             ) : (
-              <Button variant="ghost" size="sm" className="text-(--color-danger)" disabled={pendente('excluir')} onClick={() => definirExcluindo({ tipo: 'empresa', id: empresa.id })}>
-                <Trash2 size={14} />
+              <Botao
+                variante="fantasma"
+                tamanho="sm"
+                className="text-(--color-danger)"
+                disabled={pendente('excluir')}
+                onClick={() => definirExcluindo({ tipo: 'empresa', id: empresa.id })}
+              >
                 Excluir
-              </Button>
+              </Botao>
             )}
           </div>
         }
       />
 
       <RevelarScroll>
-        <div className="grid gap-3 sm:grid-cols-3 mb-6">
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3)">VIGMED</p>
-            <p className="text-lg font-semibold">{formatarBytes(consumo.vigmed)}</p>
-          </div>
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3)">Enviado pela empresa</p>
-            <p className="text-lg font-semibold">{formatarBytes(consumo.empresa)}</p>
-          </div>
-          <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-            <p className="text-xs text-(--color-text-3)">Cota</p>
-            <p className="text-lg font-semibold">{formatarBytes(empresa.armazenamento_limite)}</p>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-3 mb-4">
+          <Metrica rotulo="VIGMED" valor={formatarBytes(consumo.vigmed)} />
+          <Metrica rotulo="Enviado pela empresa" valor={formatarBytes(consumo.empresa)} />
+          <Metrica rotulo="Cota" valor={formatarBytes(empresa.armazenamento_limite)} destaque />
         </div>
+        {empresa.armazenamento_limite > 0 && (
+          <div className="vig-dashboard-detalhe mb-6">
+            {(() => {
+              const pct = Math.min((consumo.empresa / empresa.armazenamento_limite) * 100, 100)
+              return (
+                <>
+                  <p>
+                    Uso da cota empresa: <strong>{Math.round(pct)}%</strong> (
+                    {formatarBytes(consumo.empresa)} de {formatarBytes(empresa.armazenamento_limite)})
+                  </p>
+                  <div className="vig-barra-progresso mt-2">
+                    <div
+                      className={`vig-barra-progresso-fill${pct >= 90 ? ' vig-barra-progresso-fill--alerta' : ''}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  {pct >= 90 && (
+                    <p className="vig-dashboard-detalhe-sub text-(--color-danger) mt-2">
+                      Cota quase esgotada: considere aumentar o limite ou remover arquivos antigos.
+                    </p>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+        )}
       </RevelarScroll>
 
       <RevelarScroll atraso={0.04}>
-        <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4 mb-6">
-          <h2 className="text-sm font-semibold mb-3">Dados da empresa</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Input label="Razão social" value={form.razaoSocial} onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })} />
-            <Input label="Nome fantasia" value={form.nomeFantasia} onChange={(e) => definirForm({ ...form, nomeFantasia: e.target.value })} />
-            <Input label="CNPJ" value={form.cnpj} onChange={(e) => definirForm({ ...form, cnpj: e.target.value })} />
-            <Input label="E-mail" type="email" value={form.email} onChange={(e) => definirForm({ ...form, email: e.target.value })} />
-            <Input label="Telefone" value={form.telefone} onChange={(e) => definirForm({ ...form, telefone: e.target.value })} />
-            <Input label="Responsável" value={form.responsavel} onChange={(e) => definirForm({ ...form, responsavel: e.target.value })} />
-            <div className="painel-campo sm:col-span-2">
-              <label className="painel-label">Status</label>
-              <select
-                className="painel-select w-full"
+        <Cartao titulo="Dados da empresa" className="mb-6">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Campo rotulo="Razão social" value={form.razaoSocial} onChange={(e) => definirForm({ ...form, razaoSocial: e.target.value })} />
+            <Campo rotulo="Nome fantasia" value={form.nomeFantasia} onChange={(e) => definirForm({ ...form, nomeFantasia: e.target.value })} />
+            <Campo rotulo="CNPJ" value={form.cnpj} onChange={(e) => definirForm({ ...form, cnpj: e.target.value })} />
+            <Campo rotulo="E-mail" type="email" value={form.email} onChange={(e) => definirForm({ ...form, email: e.target.value })} />
+            <Campo rotulo="Telefone" value={form.telefone} onChange={(e) => definirForm({ ...form, telefone: e.target.value })} />
+            <Campo rotulo="Responsável" value={form.responsavel} onChange={(e) => definirForm({ ...form, responsavel: e.target.value })} />
+            <div className="sm:col-span-2">
+              <Seletor
+                rotulo="Status"
                 value={form.status}
                 onChange={(e) => definirForm({ ...form, status: e.target.value as StatusEmpresa })}
-              >
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
-                <option value="suspenso">Suspenso</option>
-              </select>
+                opcoes={[
+                  { valor: 'ativo', rotulo: 'Ativo' },
+                  { valor: 'inativo', rotulo: 'Inativo' },
+                  { valor: 'suspenso', rotulo: 'Suspenso' },
+                ]}
+              />
             </div>
           </div>
-          <Button variant="primary" size="sm" className="mt-3" loading={pendente('salvar')} onClick={salvar}>
+          <Botao variante="primario" tamanho="sm" className="mt-4" carregando={pendente('salvar')} onClick={salvar}>
             Salvar alterações
-          </Button>
-        </div>
+          </Botao>
+        </Cartao>
       </RevelarScroll>
 
       <RevelarScroll atraso={0.08}>
-        <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
+        <Cartao>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-semibold flex items-center gap-2 text-[var(--vig-navy)]">
               <UserPlus size={15} />
               Pessoas ({perfis.length} contas · {convites.filter((c) => !c.usado_em).length} pendentes)
             </h2>
-            <Button variant="outline" size="sm" render={<Link href={hrefPublico(ROTAS.adm.usuarios)} />}>
+            <Botao variante="secundario" tamanho="sm" href={hrefPublico(ROTAS.adm.usuarios)}>
               Abrir Pessoas
-            </Button>
+            </Botao>
           </div>
 
-          <form onSubmit={convidar} className="grid gap-2 sm:grid-cols-3 mb-3">
-            <Input label="E-mail" type="email" value={emailConvite} onChange={(e) => definirEmailConvite(e.target.value)} required />
-            <Input label="Nome" value={nomeConvite} onChange={(e) => definirNomeConvite(e.target.value)} />
+          <form onSubmit={convidar} className="grid gap-3 sm:grid-cols-3 mb-4">
+            <Campo rotulo="E-mail" type="email" value={emailConvite} onChange={(e) => definirEmailConvite(e.target.value)} required />
+            <Campo rotulo="Nome" value={nomeConvite} onChange={(e) => definirNomeConvite(e.target.value)} />
             <div className="flex items-end">
-              <Button type="submit" variant="outline" size="sm" loading={pendente('convidar')} className="w-full sm:w-auto">
+              <Botao type="submit" variante="secundario" tamanho="sm" carregando={pendente('convidar')} className="w-full sm:w-auto">
                 Autorizar e copiar link
-              </Button>
+              </Botao>
             </div>
           </form>
 
@@ -228,14 +275,14 @@ export function PainelEmpresaDetalhe({ empresa, consumo, perfis, convites }: Pro
             {convites.filter((c) => !c.usado_em).slice(0, 3).map((c) => (
               <li key={c.id} className="py-2 flex justify-between gap-2 opacity-70">
                 <span className="truncate">{c.email}</span>
-                <Badge variant="default" className="text-[10px]">Pendente</Badge>
+                <Selo variante="alerta" className="text-[10px]">Pendente</Selo>
               </li>
             ))}
             {perfis.length === 0 && convites.length === 0 && (
               <li className="py-3 text-(--color-text-3)">Ninguém vinculado ainda.</li>
             )}
           </ul>
-        </div>
+        </Cartao>
       </RevelarScroll>
     </SecaoPainel>
   )

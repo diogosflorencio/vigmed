@@ -41,12 +41,6 @@ export async function entrarComEmail(
     .update({ ultimo_login_em: new Date().toISOString() })
     .eq('id', data.user.id)
 
-  await registrarAuditoria({
-    acao: 'login',
-    usuarioId: data.user.id,
-    detalhes: { metodo: 'email' },
-  })
-
   const urlBase = await urlBaseAuthDaRequisicao()
   redirect(
     resolverDestinoPosLogin(validacao.perfil.papel, urlBase, opcoes?.redirect, opcoes?.ambiente),
@@ -117,12 +111,6 @@ export async function cadastrarComEmail(
     detalhes: { metodo: 'email', ambiente: convite.convite.ambiente },
   })
 
-  await registrarAuditoria({
-    acao: 'login',
-    usuarioId: data.user.id,
-    detalhes: { metodo: 'email', origem: 'cadastro' },
-  })
-
   const urlBase = await urlBaseAuthDaRequisicao()
   redirect(urlPainelAposLogin(validacao.perfil.papel, urlBase))
 }
@@ -135,15 +123,6 @@ export async function entrarComGoogle() {
 
 export async function sair() {
   const supabase = await criarClienteSupabaseServidor()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
-    await registrarAuditoria({
-      acao: 'logout',
-      usuarioId: user.id,
-    })
-  }
-
   await supabase.auth.signOut()
   redirect(ROTAS.auth.entrar)
 }

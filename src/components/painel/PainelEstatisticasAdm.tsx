@@ -1,6 +1,5 @@
 import type { EstatisticasPainelAdmin } from '@/types'
 import { RevelarScroll } from '@/components/ui/revelar-scroll'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { Cartao } from '@/components/vig/Cartao'
 import { Metrica } from '@/components/vig/Metrica'
 import { formatarBytes } from '@/lib/utils'
@@ -28,10 +27,10 @@ export function PainelEstatisticasAdm({ dados }: Props) {
     <div className="vig-dashboard-adm">
       <RevelarScroll atraso={0.04}>
         <div className="vig-metrica-grid vig-metrica-grid--4">
-          <Metrica rotulo="Empresas ativas" valor={e.ativas} icone={<IconeAnimado nome="building" tamanho={16} />} destaque />
-          <Metrica rotulo="Usuários ativos" valor={u.ativos} icone={<IconeAnimado nome="users" tamanho={16} />} />
-          <Metrica rotulo="Documentos ativos" valor={d.ativos} icone={<IconeAnimado nome="file-text" tamanho={16} />} />
-          <Metrica rotulo="Eventos (24h)" valor={a.eventos24h} icone={<IconeAnimado nome="activity" tamanho={16} />} />
+          <Metrica rotulo="Empresas ativas" valor={e.ativas} destaque />
+          <Metrica rotulo="Usuários ativos" valor={u.ativos} />
+          <Metrica rotulo="Documentos ativos" valor={d.ativos} />
+          <Metrica rotulo="Eventos (24h)" valor={a.eventos24h} />
         </div>
       </RevelarScroll>
 
@@ -100,7 +99,7 @@ export function PainelEstatisticasAdm({ dados }: Props) {
         <RevelarScroll atraso={0.14}>
           <Cartao titulo="Auditoria" descricao="Últimos 7 dias">
             <div className="vig-metrica-grid vig-metrica-grid--2 vig-metrica-grid--inline">
-              <Metrica rotulo="Logins" valor={a.logins7d} />
+              <Metrica rotulo="Acessos" valor={a.logins7d} />
               <Metrica rotulo="Envios" valor={a.envios7d} />
               <Metrica rotulo="Downloads" valor={a.downloads7d} />
               <Metrica rotulo="Eventos" valor={a.eventos7d} />

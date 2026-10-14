@@ -3,15 +3,21 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BarChart3, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
-import { PillsFiltro } from '@/components/layout/PillsFiltro'
 import { SecaoPainel } from '@/components/layout/SecaoPainel'
-import { Badge, Button, Card, CardContent } from '@/components/ui'
+import { ChipSeletor } from '@/components/vig/ChipSeletor'
+import { Metrica } from '@/components/vig/Metrica'
+import { Botao } from '@/components/vig/Botao'
+import { Vazio } from '@/components/vig/Vazio'
+import { Campo } from '@/components/vig/Campo'
+import { Selo } from '@/components/vig/Selo'
+import { Cartao } from '@/components/vig/Cartao'
+import { Confirm } from '@/components/ui/confirmar'
 import { alterarStatusPostBlog, excluirPostBlog } from '@/lib/blog/acoes'
 import { ROTAS, hrefPublico, urlDoAmbiente } from '@/lib/rotas'
-import { cn, formatarDataHora } from '@/lib/utils'
+import { formatarDataHora } from '@/lib/utils'
 import type { PostBlog } from '@/types'
 import type { EstatisticasPostBlog, StatusPostBlog } from '@/lib/blog/tipos'
 
@@ -33,6 +39,7 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
   const [aba, definirAba] = useState<Aba>('todos')
   const [busca, definirBusca] = useState('')
   const [pendente, iniciar] = useTransition()
+  const [excluirAlvo, definirExcluirAlvo] = useState<{ id: string; titulo: string } | null>(null)
 
   const mapaStats = useMemo(
     () => new Map(estatisticas.map((e) => [e.postId, e])),
@@ -57,8 +64,13 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
     return { publicados: publicados.length, views, views7d }
   }, [postsIniciais, estatisticas])
 
-  function excluir(id: string, titulo: string) {
-    if (!confirm(`Excluir "${titulo}"? Esta ação não pode ser desfeita.`)) return
+  function pedirExclusao(id: string, titulo: string) {
+    definirExcluirAlvo({ id, titulo })
+  }
+
+  function confirmarExclusao() {
+    if (!excluirAlvo) return
+    const { id } = excluirAlvo
     iniciar(async () => {
       const r = await excluirPostBlog(id)
       if (r.erro) toast.error(r.erro)
@@ -66,6 +78,7 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
         toast.success('Post excluído.')
         router.refresh()
       }
+      definirExcluirAlvo(null)
     })
   }
 
@@ -84,79 +97,45 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
     <SecaoPainel>
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <CabecalhoPagina
+          rotulo="Conteúdo"
           titulo="Blog"
           descricao="Publicações no site e métricas de leitura."
         />
-        <Button render={<Link href={hrefPublico(ROTAS.adm.blogNovo)} />} variant="primary" size="sm">
-          <Plus size={16} />
-          Novo post
-        </Button>
+        <Botao href={hrefPublico(ROTAS.adm.blogNovo)} variante="primario" tamanho="sm" filho="Novo post" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="surface-card">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Eye size={18} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold">{totais.publicados}</p>
-              <p className="text-xs text-muted-foreground">Posts publicados</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="surface-card">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <BarChart3 size={18} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold">{totais.views.toLocaleString('pt-BR')}</p>
-              <p className="text-xs text-muted-foreground">Visualizações totais</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="surface-card">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <BarChart3 size={18} />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold">{totais.views7d.toLocaleString('pt-BR')}</p>
-              <p className="text-xs text-muted-foreground">Últimos 7 dias</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="vig-metrica-grid vig-metrica-grid--3">
+        <Metrica rotulo="Posts publicados" valor={totais.publicados} />
+        <Metrica rotulo="Visualizações totais" valor={totais.views.toLocaleString('pt-BR')} />
+        <Metrica rotulo="Últimos 7 dias" valor={totais.views7d.toLocaleString('pt-BR')} />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <PillsFiltro
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end justify-between">
+        <ChipSeletor
           opcoes={[
             { id: 'todos', rotulo: 'Todos' },
             { id: 'publicado', rotulo: 'Publicados' },
             { id: 'rascunho', rotulo: 'Rascunhos' },
             { id: 'arquivado', rotulo: 'Arquivados' },
           ]}
-          ativo={aba}
-          onChange={(id) => definirAba(id as Aba)}
+          valor={aba}
+          aoMudar={(id) => definirAba(id as Aba)}
         />
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            className="w-full rounded-lg border border-input bg-transparent pl-9 pr-3 py-2 text-sm"
-            placeholder="Buscar posts..."
-            value={busca}
-            onChange={(e) => definirBusca(e.target.value)}
-          />
-        </div>
+        <Campo
+          placeholder="Buscar posts..."
+          value={busca}
+          onChange={(e) => definirBusca(e.target.value)}
+          prefixo={<Search size={16} />}
+          className="max-w-md"
+        />
       </div>
 
       <div className="flex flex-col gap-3">
         {posts.map((post) => {
           const stats = mapaStats.get(post.id)
           return (
-            <Card key={post.id} className="surface-card overflow-hidden">
-              <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-4">
+            <Cartao key={post.id} className="overflow-hidden">
+              <div className="p-4 flex flex-col md:flex-row md:items-center gap-4">
                 {post.imagem_capa_url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -168,19 +147,15 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h3 className="font-semibold truncate">{post.titulo}</h3>
-                    <Badge
-                      variant={post.status === 'publicado' ? 'success' : 'info'}
-                      className={cn(post.status === 'arquivado' && 'opacity-70')}
-                    >
+                    <Selo variante={post.status === 'publicado' ? 'sucesso' : post.status === 'arquivado' ? 'padrao' : 'info'}>
                       {ROTULO_STATUS[post.status]}
-                    </Badge>
+                    </Selo>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">/{post.slug}</p>
-                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                  <p className="text-xs text-[var(--color-text-3)] truncate">/{post.slug}</p>
+                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-[var(--color-text-3)]">
                     <span>Atualizado {formatarDataHora(post.atualizado_em)}</span>
                     {post.publicado_em && <span>Publicado {formatarDataHora(post.publicado_em)}</span>}
-                    <span className="inline-flex items-center gap-1">
-                      <Eye size={12} />
+                    <span>
                       {post.total_visualizacoes ?? 0} views
                       {stats && stats.visualizacoes7d > 0 && ` · ${stats.visualizacoes7d} (7d)`}
                     </span>
@@ -194,7 +169,6 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
                       rel="noopener noreferrer"
                       className="inline-flex h-7 items-center gap-1 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-button-bg)] px-2.5 text-[0.8rem] font-medium hover:bg-[var(--glass-nav-hover)]"
                     >
-                      <Eye size={14} />
                       Ver
                     </a>
                   )}
@@ -202,34 +176,39 @@ export function PainelBlogAdm({ postsIniciais, estatisticas }: Props) {
                     href={hrefPublico(ROTAS.adm.blogEditar(post.id))}
                     className="inline-flex h-7 items-center gap-1 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-button-bg)] px-2.5 text-[0.8rem] font-medium hover:bg-[var(--glass-nav-hover)]"
                   >
-                    <Pencil size={14} />
                     Editar
                   </Link>
                   {post.status !== 'arquivado' && (
-                    <Button variant="ghost" size="sm" disabled={pendente} onClick={() => arquivar(post.id)}>
-                      Arquivar
-                    </Button>
+                    <Botao variante="fantasma" tamanho="sm" disabled={pendente} onClick={() => arquivar(post.id)} filho="Arquivar" />
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
+                  <Botao
+                    variante="fantasma"
+                    tamanho="sm"
+                    className="text-[#b42318]"
                     disabled={pendente}
-                    onClick={() => excluir(post.id, post.titulo)}
+                    onClick={() => pedirExclusao(post.id, post.titulo)}
                   >
-                    <Trash2 size={14} />
-                  </Button>
+                    Excluir
+                  </Botao>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Cartao>
           )
         })}
         {!posts.length && (
-          <div className="surface-card p-12 text-center text-muted-foreground">
-            Nenhum post encontrado.
-          </div>
+          <Vazio titulo="Nenhum post encontrado" descricao="Crie um artigo ou ajuste a busca." compacto />
         )}
       </div>
+
+      <Confirm
+        open={!!excluirAlvo}
+        onClose={() => definirExcluirAlvo(null)}
+        onConfirm={confirmarExclusao}
+        title="Excluir post"
+        message={excluirAlvo ? `Excluir "${excluirAlvo.titulo}"? Esta ação não pode ser desfeita.` : ''}
+        confirmLabel="Excluir"
+        loading={pendente}
+      />
     </SecaoPainel>
   )
 }

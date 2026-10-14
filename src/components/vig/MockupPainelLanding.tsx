@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 
-/** Mockup visual do painel, laptop + celular para a landing */
+/** Mockup do portal docs: laptop + celular com UI reconhecível */
 export function MockupPainelLanding() {
   return (
     <div className="vig-mockup-dispositivos" aria-hidden>
@@ -12,26 +12,55 @@ export function MockupPainelLanding() {
             <span className="vig-mockup-dot vig-mockup-dot--r" />
             <span className="vig-mockup-dot vig-mockup-dot--y" />
             <span className="vig-mockup-dot vig-mockup-dot--g" />
+            <span className="vig-mockup-laptop-url">docs.vigmed.com.br</span>
           </div>
           <div className="vig-mockup-laptop-corpo">
             <aside className="vig-mockup-sidebar">
-              {['Painel', 'Laudos', 'Docs', 'Msgs'].map((item, i) => (
-                <div key={item} className={cn('vig-mockup-sidebar-item', i === 0 && 'vig-mockup-sidebar-item--ativo')}>
-                  <span className="vig-mockup-sidebar-ico" />
-                  <span>{item}</span>
+              {[
+                { rotulo: 'Painel', ativo: true },
+                { rotulo: 'Laudos', ativo: false },
+                { rotulo: 'Colaboradores', ativo: false },
+                { rotulo: 'Mensagens', ativo: false },
+                { rotulo: 'Meu perfil', ativo: false },
+              ].map((item) => (
+                <div
+                  key={item.rotulo}
+                  className={cn('vig-mockup-sidebar-item', item.ativo && 'vig-mockup-sidebar-item--ativo')}
+                >
+                  <span className="vig-mockup-sidebar-trilha" />
+                  <span>{item.rotulo}</span>
                 </div>
               ))}
             </aside>
             <main className="vig-mockup-conteudo">
-              <div className="vig-mockup-linha vig-mockup-linha--titulo" />
+              <div className="vig-mockup-banner">
+                <p className="vig-mockup-saudacao">Olá, Empresa Exemplo!</p>
+                <p className="vig-mockup-banner-sub">Laudos e documentos dos exames ocupacionais</p>
+              </div>
               <div className="vig-mockup-cards">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="vig-mockup-card-mini" />
+                {[
+                  { r: 'Laudos', v: '128' },
+                  { r: 'Colaboradores', v: '86' },
+                  { r: 'Exames', v: '142' },
+                  { r: 'Último', v: '16/05' },
+                ].map((m) => (
+                  <div key={m.r} className="vig-mockup-card-mini">
+                    <span>{m.r}</span>
+                    <strong>{m.v}</strong>
+                  </div>
                 ))}
               </div>
               <div className="vig-mockup-tabela">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="vig-mockup-linha vig-mockup-linha--row" />
+                <div className="vig-mockup-tabela-cab">Laudos recentes</div>
+                {[
+                  { nome: 'João da Silva', status: 'Disponível' },
+                  { nome: 'Maria Souza', status: 'Disponível' },
+                  { nome: 'Carlos Lima', status: 'Disponível' },
+                ].map((linha) => (
+                  <div key={linha.nome} className="vig-mockup-linha vig-mockup-linha--row">
+                    <span>{linha.nome}</span>
+                    <em className="vig-mockup-selo">{linha.status}</em>
+                  </div>
                 ))}
               </div>
             </main>
@@ -43,10 +72,19 @@ export function MockupPainelLanding() {
       <div className="vig-mockup-celular">
         <div className="vig-mockup-celular-notch" />
         <div className="vig-mockup-celular-tela">
-          <div className="vig-mockup-linha vig-mockup-linha--titulo" />
-          {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="vig-mockup-linha vig-mockup-linha--row" />
+          <p className="vig-mockup-saudacao vig-mockup-saudacao--mobile">Documentos</p>
+          {['ASO admissional', 'Laudo ergonômico', 'PCMSO 2026', 'Comunicado NR-35'].map((nome) => (
+            <div key={nome} className="vig-mockup-linha vig-mockup-linha--row vig-mockup-linha--mobile">
+              <span>{nome}</span>
+            </div>
           ))}
+          <div className="vig-mockup-dock-mobile">
+            {['Início', 'Docs', 'Msgs'].map((item, i) => (
+              <span key={item} className={cn(i === 1 && 'vig-mockup-dock-mobile--ativo')}>
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

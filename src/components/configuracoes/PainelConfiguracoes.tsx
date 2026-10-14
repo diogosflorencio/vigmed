@@ -1,14 +1,20 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { CabecalhoPagina } from '@/components/layout/CabecalhoPagina'
 import { SecaoPainel, CartaoPainel } from '@/components/layout/SecaoPainel'
-import { Button, Input, Textarea, CheckboxInline } from '@/components/ui'
+import { Botao } from '@/components/vig/Botao'
+import { Campo } from '@/components/vig/Campo'
+import { AreaTexto } from '@/components/vig/AreaTexto'
+import { CheckboxInline } from '@/components/vig/Checkbox'
 import { useAcaoPendente } from '@/hooks/use-acao-pendente'
 import {
   salvarConfiguracoesSistema,
+  executarRetencaoDocumentos,
+  simularRetencaoConfiguracao,
+  enviarEmailTeste,
   type ConfiguracaoLinha,
 } from '@/lib/configuracoes/acoes'
 
@@ -72,16 +78,60 @@ function legendaMb(mb: number): string {
 
 export function PainelConfiguracoes({ configuracoes }: Props) {
   const router = useRouter()
-  const { pendente, executar } = useAcaoPendente<'salvar'>()
+  const { pendente, executar } = useAcaoPendente<'salvar' | 'retencao' | 'emailTeste'>()
 
   const [limiteMb, definirLimiteMb] = useState(() => String(limiarPadraoMb(configuracoes)))
   const [uploadMb, definirUploadMb] = useState(() => String(uploadPadraoMb(configuracoes)))
   const [extensoes, definirExtensoes] = useState(() => extensoesPadrao(configuracoes))
   const [diasRetencao, definirDiasRetencao] = useState(() => String(diasPadrao(configuracoes)))
   const [emailAuto, definirEmailAuto] = useState(() => emailPadrao(configuracoes))
+  const [emailTeste, definirEmailTeste] = useState('')
+  const [retencaoSimulada, definirRetencaoSimulada] = useState<number | null>(null)
 
   const legendaLimite = useMemo(() => legendaMb(Number(limiteMb)), [limiteMb])
   const legendaUpload = useMemo(() => legendaMb(Number(uploadMb)), [uploadMb])
+
+  useEffect(() => {
+    const dias = Number(diasRetencao)
+    if (!Number.isFinite(dias) || dias <= 0) {
+      definirRetencaoSimulada(null)
+      return
+    }
+    let ativo = true
+    void simularRetencaoConfiguracao().then((r) => {
+      if (ativo) definirRetencaoSimulada(r.candidatos)
+    })
+    return () => {
+      ativo = false
+    }
+  }, [diasRetencao])
+
+  function executarRetencao() {
+    void executar('retencao', async () => {
+      const resultado = await executarRetencaoDocumentos()
+      if ('erro' in resultado && resultado.erro) {
+        toast.error(String(resultado.erro))
+        return
+      }
+      toast.success(
+        resultado.excluidos > 0
+          ? `${resultado.excluidos} documento(s) removido(s) pela política de retenção.`
+          : 'Nenhum documento elegível para remoção no momento.',
+      )
+      router.refresh()
+    })
+  }
+
+  function enviarTesteEmail() {
+    void executar('emailTeste', async () => {
+      const resultado = await enviarEmailTeste(emailTeste)
+      if (resultado.erro) {
+        toast.error(resultado.erro)
+        return
+      }
+      toast.success(`E-mail de teste enviado para ${emailTeste.trim()}.`)
+    })
+  }
 
   function salvar() {
     void executar('salvar', async () => {
@@ -110,12 +160,11 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
   return (
     <SecaoPainel>
       <CabecalhoPagina
+        rotulo="Sistema"
         titulo="Configurações"
         descricao="Parâmetros globais da plataforma. Alterações valem para novas ações (upload, empresas novas, comunicados)."
         acoes={
-          <Button variant="primary" size="sm" loading={pendente('salvar')} onClick={salvar}>
-            Salvar alterações
-          </Button>
+          <Botao variante="primario" tamanho="sm" carregando={pendente('salvar')} onClick={salvar} filho="Salvar alterações" />
         }
       />
 
@@ -124,8 +173,8 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
         descricao="Cota inicial aplicada automaticamente ao cadastrar uma empresa nova. Empresas já existentes não mudam sozinhas; edite a cota na ficha da empresa se precisar."
       >
         <div className="flex flex-col sm:flex-row gap-3 items-end max-w-lg">
-          <Input
-            label="Limite padrão (MB)"
+          <Campo
+            rotulo="Limite padrão (MB)"
             type="number"
             min={1}
             step={1}
@@ -141,8 +190,8 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
         descricao="Regras aplicadas no envio de documentos (admin e empresas)."
       >
         <div className="grid gap-4 max-w-2xl">
-          <Input
-            label="Tamanho máximo por arquivo (MB)"
+          <Campo
+            rotulo="Tamanho máximo por arquivo (MB)"
             type="number"
             min={0.1}
             step={0.1}
@@ -151,8 +200,8 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
             hint={legendaUpload}
           />
 
-          <Textarea
-            label="Extensões permitidas"
+          <AreaTexto
+            rotulo="Extensões permitidas"
             rows={3}
             value={extensoes}
             onChange={(e) => definirExtensoes(e.target.value)}
@@ -164,18 +213,36 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
 
       <CartaoPainel
         titulo="Retenção de documentos"
-        descricao="Prazo de guarda configurável. A exclusão automática por prazo ainda não está ativa; o valor fica registrado para uso futuro."
+        descricao="Documentos sem validade manual recebem prazo automático no upload. A remoção ocorre quando a validade expira ou quando passam os dias configurados desde o envio."
       >
-        <div className="max-w-lg">
-          <Input
-            label="Dias de retenção"
+        <div className="max-w-lg grid gap-4">
+          <Campo
+            rotulo="Dias de retenção"
             type="number"
             min={0}
             step={1}
             value={diasRetencao}
             onChange={(e) => definirDiasRetencao(e.target.value)}
-            hint="0 = manter indefinidamente. Ex.: 365 remove (quando automatizado) arquivos com mais de 1 ano."
+            hint="0 = sem prazo automático no upload. Com valor > 0, novos arquivos ganham valido_ate; arquivos antigos sem data também entram na política."
           />
+          {retencaoSimulada != null && retencaoSimulada > 0 && (
+            <p className="text-sm text-(--color-text-2)">
+              <strong>{retencaoSimulada}</strong> documento{retencaoSimulada > 1 ? 's' : ''} seria
+              {retencaoSimulada > 1 ? 'm' : ''} removido{retencaoSimulada > 1 ? 's' : ''} se executar a retenção agora.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 items-center">
+            <Botao
+              variante="secundario"
+              tamanho="sm"
+              carregando={pendente('retencao')}
+              onClick={executarRetencao}
+              filho="Executar retenção agora"
+            />
+            <span className="text-xs text-(--color-text-3)">
+              Crons: GET https://api.vigmed.com.br/api/cron/retencao e GET https://api.vigmed.com.br/api/cron/alertas-validade (Bearer CRON_SECRET) 
+            </span>
+          </div>
         </div>
       </CartaoPainel>
 
@@ -185,11 +252,35 @@ export function PainelConfiguracoes({ configuracoes }: Props) {
       >
         <CheckboxInline
           rotulo="E-mail automático ao publicar comunicado"
-          descricao="Quando ativo, envia e-mail às empresas ao publicar. Requer SMTP configurado no servidor."
+          descricao="Quando ativo, envia e-mail às empresas ao publicar. Precisa da api do resend e o email do remetente"
           checked={emailAuto}
           onChange={(e) => definirEmailAuto(e.target.checked)}
           className="max-w-xl"
         />
+      </CartaoPainel>
+
+      <CartaoPainel
+        titulo="E-mail (Resend)"
+        descricao="Valide a configuração antes de depender dos envios automáticos."
+      >
+        <div className="flex flex-col sm:flex-row gap-3 items-end max-w-xl">
+          <Campo
+            rotulo="Enviar teste para"
+            type="email"
+            value={emailTeste}
+            onChange={(e) => definirEmailTeste(e.target.value)}
+            placeholder="seu@email.com"
+            hint="Precisa da api do resend e o email do remetente. Não altera as configurações acima."
+          />
+          <Botao
+            variante="secundario"
+            tamanho="sm"
+            carregando={pendente('emailTeste')}
+            disabled={!emailTeste.trim()}
+            onClick={enviarTesteEmail}
+            filho="Enviar teste"
+          />
+        </div>
       </CartaoPainel>
     </SecaoPainel>
   )

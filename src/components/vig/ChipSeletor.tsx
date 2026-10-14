@@ -15,12 +15,17 @@ interface Props<T extends string> {
   valor: T
   aoMudar: (valor: T) => void
   className?: string
+  rotulo?: string
 }
 
-/** Seletor em pílulas, modo, tema, layout de menu */
-export function ChipSeletor<T extends string>({ opcoes, valor, aoMudar, className }: Props<T>) {
+/** Seletor em pílulas, touch-friendly e acessível */
+export function ChipSeletor<T extends string>({ opcoes, valor, aoMudar, className, rotulo }: Props<T>) {
   return (
-    <div className={cn('vig-chip-grupo', className)}>
+    <div
+      className={cn('vig-chip-grupo', className)}
+      role="group"
+      aria-label={rotulo ?? 'Opções'}
+    >
       {opcoes.map((op) => {
         const ativo = valor === op.id
         return (
@@ -33,7 +38,7 @@ export function ChipSeletor<T extends string>({ opcoes, valor, aoMudar, classNam
           >
             {op.preview}
             {op.icone}
-            {op.rotulo}
+            <span>{op.rotulo}</span>
           </button>
         )
       })}

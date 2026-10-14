@@ -14,11 +14,12 @@ interface Props {
   perfil: Perfil
 }
 
-/** Navegação principal do painel, dock, lateral ou superior */
+/** Navegação principal do painel: dock, lateral, direita ou superior */
 export function NavegacaoApp(props: Props) {
   const { modeloMenu } = useTheme()
 
-  if (modeloMenu === 'lateral') return <MenuVarianteLateral {...props} />
+  if (modeloMenu === 'lateral') return <MenuVarianteLateral {...props} lado="esquerda" />
+  if (modeloMenu === 'direita') return <MenuVarianteLateral {...props} lado="direita" />
   if (modeloMenu === 'superior') return <MenuSuperior {...props} />
   return <MenuDock {...props} />
 }

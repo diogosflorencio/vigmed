@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { motion } from 'framer-motion'
 import { Botao } from '@/components/vig/Botao'
 import { Campo } from '@/components/vig/Campo'
 import { Cartao } from '@/components/vig/Cartao'
-import { IconeAnimado } from '@/components/ui/icone-animado'
 import { solicitarRedefinicaoSenha } from '@/lib/auth/acoes'
 import { ROTAS } from '@/lib/rotas'
 import toast from 'react-hot-toast'
@@ -31,12 +29,7 @@ export function FormularioRecuperarSenha() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="w-full max-w-md mx-auto"
-    >
+    <div className="w-full max-w-md mx-auto">
       <Cartao className="vig-auth-card">
         <div className="vig-auth-card-topo">
           <h1>Recuperar senha</h1>
@@ -45,14 +38,23 @@ export function FormularioRecuperarSenha() {
 
         {enviado ? (
           <div className="vig-auth-sucesso">
-            <IconeAnimado nome="mail" tamanho={28} />
+            <span className="vig-auth-sucesso-ico" aria-hidden>
+              ✉
+            </span>
             <p>
               Verifique sua caixa de entrada em <strong>{email}</strong>.
             </p>
           </div>
         ) : (
           <form onSubmit={aoEnviar} className="flex flex-col gap-4">
-            <Campo rotulo="E-mail" type="email" value={email} onChange={(e) => definirEmail(e.target.value)} placeholder="seu@email.com" required />
+            <Campo
+              rotulo="E-mail"
+              type="email"
+              value={email}
+              onChange={(e) => definirEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+            />
             <Botao type="submit" variante="primario" className="w-full" disabled={pendente} filho="Enviar link" />
           </form>
         )}
@@ -61,6 +63,6 @@ export function FormularioRecuperarSenha() {
           <a href={ROTAS.auth.entrar}>Voltar ao login</a>
         </p>
       </Cartao>
-    </motion.div>
+    </div>
   )
 }
