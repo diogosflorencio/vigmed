@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { atualizarSessao } from '@/lib/supabase/middleware'
 import {
+  hostAuthDivergeDoCanonico,
   obterAmbienteDoHost,
   obterUrlBaseDoAmbiente,
   roteamentoPorSubdominio,
+  urlOrigemAuthCanonica,
 } from '@/lib/ambiente-edge'
 import { hrefPublico, ROTAS } from '@/lib/rotas'
 
@@ -12,6 +14,8 @@ const ROTAS_AUTH_UNIFICADAS: string[] = [
   ROTAS.auth.cadastro,
   ROTAS.auth.recuperar,
 ]
+
+const PATH_CALLBACK_AUTH = '/api/auth/callback'
 
 const ROTAS_AUTH_LEGADAS: string[] = [
   '/adm/entrar',
@@ -36,6 +40,21 @@ async function executarProxy(requisicao: NextRequest) {
   const host = requisicao.headers.get('host') ?? 'localhost'
   const ambiente = obterAmbienteDoHost(host)
   const porSubdominio = roteamentoPorSubdominio()
+
+  // Apex ↔ www: força host canônico em auth/callback (preserva query do OAuth)
+  if (
+    porSubdominio &&
+    hostAuthDivergeDoCanonico(host) &&
+    (ROTAS_AUTH_UNIFICADAS.includes(pathname) || pathname === PATH_CALLBACK_AUTH)
+  ) {
+    const destino = new URL(pathname + requisicao.nextUrl.search, urlOrigemAuthCanonica())
+    return NextResponse.redirect(destino, 308)
+  }
+
+  // Callback OAuth: não refrescar sessão aqui (evita interferir no cookie PKCE)
+  if (pathname === PATH_CALLBACK_AUTH) {
+    return NextResponse.next({ request: requisicao })
+  }
 
   if (
     pathname.startsWith('/_next') ||

@@ -40,7 +40,11 @@ export function FormularioLogin({
     } else if (codigo === 'oauth' && msg) {
       definirErro(decodeURIComponent(msg))
     } else if (codigo === 'auth') {
-      definirErro('Não foi possível concluir o login. Tente novamente.')
+      definirErro(
+        msg
+          ? decodeURIComponent(msg)
+          : 'Não foi possível concluir o login. Tente novamente.',
+      )
     }
   }, [parametros])
 
